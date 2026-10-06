@@ -211,7 +211,18 @@ class TrayApp:
         poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
         poll_thread.start()
 
-        self.icon.run()
+        def _on_ready(icon: Any) -> None:
+            icon.visible = True
+            conn_status = "verbunden (:8081)" if self.state.get("connected") else "offline (Reconnect-Modus)"
+            try:
+                self.notify(
+                    f"{self.branding.app_title} ist aktiv ({conn_status}).",
+                    self.branding.notification_title,
+                )
+            except Exception:
+                pass
+
+        self.icon.run(setup=_on_ready)
 
     def stop(self) -> None:
         """Signals shutdown and releases the instance lock."""

@@ -1,6 +1,7 @@
 """
 Task execution delegates for ellmos-tray.
-Allows decoupling the desktop UI from the background task execution engine (agents-heart, workers, or legacy idle runner).
+Allows decoupling the desktop UI from the background task execution engine
+(agents-heart, workers, or legacy idle runner).
 """
 from __future__ import annotations
 
@@ -123,9 +124,17 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
         if not self._enabled or not always_on.get("enabled", True) or self.processing:
             return
 
-        active = app.state.get("active_sessions", app.state.get("sessions", 0))
-        if active > 0:
-            self.consecutive_idle = 0
+        # Cooldown-Pausenstatus aus Slot-Metadaten prüfen
+        pause_info = always_on.get("pause_info", {})
+        if pause_info.get("is_paused"):
+            return
+
+        # Cloud-Worker werden ausdrücklich vom Nutzer gestartet, nicht vom Hintergrundworker
+        backend = (always_on.get("backend") or "").lower()
+        cloud_backends = (
+            "claude", "claude-api", "openai", "codex", "hermes", "openrouter", "ollama-cloud",
+        )
+        if backend in cloud_backends:
             return
 
         self.consecutive_idle += 1
@@ -142,19 +151,55 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
         clean = assignee.lower().replace("agent:", "").replace("-agent", "").strip()
 
         PERSONA_MAP = {
-            "persoenlich": ("Paul", "Persoenlicher Assistent fuer Alltags- und Arbeitsorganisation"),
-            "persoenlicher-assistent": ("Paul", "Persoenlicher Assistent fuer Alltags- und Arbeitsorganisation"),
-            "aboservice": ("Anton", "Experte fuer Abonnements, Vertraege und wiederkehrende Zahlungen"),
+            "persoenlich": (
+                "Paul",
+                "Persoenlicher Assistent fuer Alltags- und Arbeitsorganisation",
+            ),
+            "persoenlicher-assistent": (
+                "Paul",
+                "Persoenlicher Assistent fuer Alltags- und Arbeitsorganisation",
+            ),
+            "aboservice": (
+                "Anton",
+                "Experte fuer Abonnements, Vertraege und wiederkehrende Zahlungen",
+            ),
             "ati": ("Atlas", "Experte fuer Aufgaben-, Tool- und Code-Scanning"),
-            "bewerbungsexperte": ("Benjamin", "Experte fuer Bewerbungsunterlagen, Lebenslaeufe und Anschreiben"),
-            "bueroassistent": ("Clara", "Assistentin fuer Dokumente, Ablage und Schriftverkehr"),
-            "data-analysis": ("Diana", "Expertin fuer Datenanalyse, Auswertungen und Statistiken"),
-            "decision-briefing": ("Dietrich", "Experte fuer strukturierte Entscheidungsvorlagen und Briefings"),
-            "finanz-assistent": ("Felix", "Assistent fuer Finanzen, Belege und Budgetuebersichten"),
-            "foerderplaner": ("Florian", "Experte fuer Foerderberichte, Hilfebedarf und Paedagogik"),
-            "haushaltsmanagement": ("Martha", "Expertin fuer Haushaltsorganisation, Vorraete und Routinen"),
-            "ticket-master": ("Ticket-Master", "Triage- und Routing-Experte fuer die Zuweisung von Aufgaben an Rollen"),
-            "task-divider": ("Task-Divider", "Experte fuer die vorab-Zerlegung komplexer Aufgaben in handhabbare Teilpakete"),
+            "bewerbungsexperte": (
+                "Benjamin",
+                "Experte fuer Bewerbungsunterlagen, Lebenslaeufe und Anschreiben",
+            ),
+            "bueroassistent": (
+                "Clara",
+                "Assistentin fuer Dokumente, Ablage und Schriftverkehr",
+            ),
+            "data-analysis": (
+                "Diana",
+                "Expertin fuer Datenanalyse, Auswertungen und Statistiken",
+            ),
+            "decision-briefing": (
+                "Dietrich",
+                "Experte fuer strukturierte Entscheidungsvorlagen und Briefings",
+            ),
+            "finanz-assistent": (
+                "Felix",
+                "Assistent fuer Finanzen, Belege und Budgetuebersichten",
+            ),
+            "foerderplaner": (
+                "Florian",
+                "Experte fuer Foerderberichte, Hilfebedarf und Paedagogik",
+            ),
+            "haushaltsmanagement": (
+                "Martha",
+                "Expertin fuer Haushaltsorganisation, Vorraete und Routinen",
+            ),
+            "ticket-master": (
+                "Ticket-Master",
+                "Triage- und Routing-Experte fuer die Zuweisung von Aufgaben an Rollen",
+            ),
+            "task-divider": (
+                "Task-Divider",
+                "Experte fuer die vorab-Zerlegung komplexer Aufgaben in handhabbare Teilpakete",
+            ),
         }
 
         display, desc = PERSONA_MAP.get(clean, (clean.capitalize(), f"Experten-Rolle '{clean}'."))
@@ -237,9 +282,13 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             return False
 
         ans_text = answer.get("content", "") if isinstance(answer, dict) else str(answer)
-        hat_folgetask = any(k in ans_text.lower() for k in ("task #", "folge-task", "folgetask", "teilaufgaben"))
+        folgetask_keywords = ("task #", "folge-task", "folgetask", "teilaufgaben")
+        hat_folgetask = any(k in ans_text.lower() for k in folgetask_keywords)
         ist_fertig = "FERTIG" in ans_text.upper() or hat_folgetask
-        ist_unvollstaendig = "(Max Tool-Runden erreicht)" in ans_text or ("nicht im Code lösen" in ans_text and not hat_folgetask)
+        ist_unvollstaendig = (
+            "(Max Tool-Runden erreicht)" in ans_text
+            or ("nicht im Code lösen" in ans_text and not hat_folgetask)
+        )
 
         task_now = app.client.api_request("GET", f"/api/tasks/{task_id}", base=app.client.gui_url)
         if task_now and task_now.get("completed_at"):
@@ -297,7 +346,8 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                     if tasks_resp and tasks_resp.get("success") and tasks_resp.get("tasks"):
                         for cand in tasks_resp["tasks"]:
                             cand_assignee = (cand.get("assigned_to") or "").strip()
-                            if cand_assignee.lower() not in ("user", "claude", "gemini", "operator", "blocked", ""):
+                            excluded = ("user", "claude", "gemini", "operator", "blocked", "")
+                            if cand_assignee.lower() not in excluded:
                                 task = cand
                                 task_status = status
                                 break
@@ -336,10 +386,12 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 return
 
             prompt = (
-                f"Du bearbeitest eine zugewiesene Aufgabe im vollen Ausfuehrungsmodus (Full-Mode mit Schreibrechten).\n\n"
-                f"ROLLE & IDENTITAET: Du agierst in dieser Session in der Rolle: '{role_display}' ({role_id}).\n"
+                "Du bearbeitest eine zugewiesene Aufgabe im vollen Ausfuehrungsmodus "
+                "(Full-Mode mit Schreibrechten).\n\n"
+                f"ROLLE & IDENTITAET: Du agierst in dieser Session in der Rolle: '{role_display}' "
+                f"({role_id}).\n"
                 f"Fachbereich / Profil: {role_desc}\n"
-                f"Handle und antworte aus der fachlichen Perspektive dieser Rolle!\n\n"
+                "Handle und antworte aus der fachlichen Perspektive dieser Rolle!\n\n"
                 f"Task #{task_id}: {title}"
             )
             if desc:
@@ -358,9 +410,13 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 )
             elif result.get("ok"):
                 ans = str(result.get("answer", ""))
-                hat_folgetask = any(k in ans.lower() for k in ("task #", "folge-task", "folgetask", "teilaufgaben"))
+                folgetask_keywords = ("task #", "folge-task", "folgetask", "teilaufgaben")
+                hat_folgetask = any(k in ans.lower() for k in folgetask_keywords)
                 ist_fertig = "FERTIG" in ans.upper() or hat_folgetask
-                ist_unvollstaendig = "(Max Tool-Runden erreicht)" in ans or ("nicht im Code lösen" in ans and not hat_folgetask)
+                ist_unvollstaendig = (
+                    "(Max Tool-Runden erreicht)" in ans
+                    or ("nicht im Code lösen" in ans and not hat_folgetask)
+                )
                 if ist_fertig or not ist_unvollstaendig:
                     app.client.api_request(
                         "PUT",

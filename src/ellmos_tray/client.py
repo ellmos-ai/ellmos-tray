@@ -7,7 +7,41 @@ import json
 import os
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any, Optional
+
+
+def _resolve_auth_header(explicit: Optional[str] = None) -> Optional[str]:
+    """Resolves the Bearer authentication header from explicit arg, env, or credentials file."""
+    if explicit:
+        return explicit
+    hdr = os.environ.get("CONTROL_API_AUTH_HEADER")
+    if hdr:
+        return hdr
+    tok = os.environ.get("BACH_CONTROL_API_TOKEN")
+    if tok:
+        return f"Bearer {tok.strip()}"
+    tok_file = os.environ.get("BACH_CONTROL_API_TOKEN_FILE")
+    if tok_file:
+        try:
+            val = Path(tok_file).read_text(encoding="utf-8").strip()
+            if val:
+                return f"Bearer {val}"
+        except Exception:
+            pass
+    for p in (
+        Path.home() / ".credentials" / "bach_control_api_token",
+        Path.home() / ".credentials" / "control_api_token",
+        Path("C:/_Local_DEV/CREDENTIALS/bach/control_api_token.txt"),
+    ):
+        if p.exists():
+            try:
+                val = p.read_text(encoding="utf-8").strip()
+                if val:
+                    return f"Bearer {val}"
+            except Exception:
+                pass
+    return None
 
 
 class ControlApiClient:
@@ -28,7 +62,7 @@ class ControlApiClient:
         self.gui_url = gui_url or f"http://{host}:8000"
         self.ollama_url = ollama_url or f"http://{host}:11434"
         self.telegram_url = telegram_url
-        self._auth_header = auth_header or os.environ.get("CONTROL_API_AUTH_HEADER")
+        self._auth_header = _resolve_auth_header(auth_header)
 
     @property
     def auth_header(self) -> Optional[str]:

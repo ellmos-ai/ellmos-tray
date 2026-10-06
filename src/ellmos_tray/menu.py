@@ -85,14 +85,23 @@ class MenuBuilder:
         items.append(pystray.MenuItem(
             branding.gui_label,
             lambda *_: webbrowser.open(self.app.client.gui_url),
+            default=True,
         ))
         items.append(pystray.MenuItem(
-            branding.chat_label,
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/chat"),
+            "Agenten Running",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running"),
         ))
         items.append(pystray.MenuItem(
-            branding.activity_label,
-            lambda *_: webbrowser.open(f"{self.app.client.base_url}/activity"),
+            "Agenten-Werkstatt & Blueprints",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/blueprints"),
+        ))
+        items.append(pystray.MenuItem(
+            "Sessions",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/sessions"),
+        ))
+        items.append(pystray.MenuItem(
+            "Tasks",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/tasks"),
         ))
         items.append(pystray.MenuItem(
             branding.messenger_label,
