@@ -1,7 +1,7 @@
 {
   "schema": "ellmos-module-v1",
   "name": "ellmos-tray",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "kind": "desktop",
   "license": "MIT",
   "description": "Pluggable, modular system tray and quick control client for ELLMOS and BACH desktop environments.",

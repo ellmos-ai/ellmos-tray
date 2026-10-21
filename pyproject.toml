@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ellmos-tray"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pluggable, modular system tray and quick control client for ELLMOS and BACH desktop environments"
 readme = "README.md"
 license = "MIT"

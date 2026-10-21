@@ -9,7 +9,7 @@ from ellmos_tray.lock import acquire_single_instance_lock, release_single_instan
 from ellmos_tray.prompts import PromptManager
 from ellmos_tray.runner import LegacyBachIdleRunner, PassiveTaskDelegate, TaskExecutionDelegate
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "TrayApp",

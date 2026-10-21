@@ -1,5 +1,28 @@
 # ellmos-tray
 
+## Gemeinsame GUI-Navigation ab 0.1.1
+
+Die Trays für BACH, Ocean und ELLMOS öffnen Chat, Aufgaben, Running/Verlauf,
+Werkstatt/Vorlagen, Posteingang, Routinen, Einstellungen und Sitzungen auf dem
+GUI-Endpunkt. Der veraltete Control-API-Link `/activity` entfällt.
+
+GUI-Adresse und Control-API-Adresse lassen sich getrennt einstellen:
+
+```bash
+ellmos-tray --brand bach --host mac-host --port 8081 --gui-url https://gui.example/bach
+```
+
+Ein konfigurierter GUI-Basispfad bleibt erhalten. Alternativ gelten
+`ELLMOS_GUI_URL` oder `BACH_GUI_URL`, für Ocean zusätzlich `OCEAN_GUI_URL`.
+Eine ausdrücklich übergebene CLI-Adresse hat Vorrang.
+
+Der Standard `--idle-worker auto` beobachtet und steuert vorhandene Backendagenten
+und startet keinen zusätzlichen lokalen Executor. Nur `--idle-worker legacy`
+aktiviert ausdrücklich die alte lokale Ausführung. Die angezeigte Always-On-
+Aktivierung stammt aus der Backendeinstellung; tatsächliche Ausführung und
+Modellresidenz werden in Running geprüft. Dieses Clientupdate startet kein Modell
+und ändert keine Modellbindung.
+
 **Pluggbarer System-Tray und Desktop-Steuerungs-Client für ELLMOS, BACH und OCEAN**
 
 `ellmos-tray` bietet eine plattformübergreifende (Windows, macOS, Linux) System-Tray-Anwendung und Schnellsteuerungs-Schnittstelle für lokale KI-Umgebungen. Es überführt die bewährten Desktop-Tray-Funktionen aus BACH OS in ein sauberes, eigenständiges und entkoppeltes Modul.
@@ -24,7 +47,7 @@
 
 4. **Dynamisches Kontextmenü**
    - **Status & Modi:** Live-Übersicht über den aktuellen Modus (`SAFE` / `FULL`) und Denkmodus (`THINK`).
-   - **Slot-Steuerung:** Interaktive Auswahl von Modell, Backend, Turn-Limits und Sicherheitsmodus für Chat-, Always-On- und Connector-Slots.
+   - **Agentenkonfiguration:** Modellbindung, Backend, Turn-Limits und Sicherheitsmodus für Chat-, Always-On- und Connector-Agenten. Aktivierung belegt weder eine laufende Inferenz noch ein residentes Modell.
    - **Dynamische Worker:** Hintergrund-Worker einsehen, starten, pausieren, fortsetzen und löschen.
    - **Ressourcen-Vorrang (Fackel):** Schnelles Umschalten der Priorität zwischen lokalem Modell (Ollama) und Rechenjobs (Compute).
    - **Dienst-Status:** Live-Indikatoren für GUI Dashboard (:8000), Control API (:8081) und Ollama (:11434).

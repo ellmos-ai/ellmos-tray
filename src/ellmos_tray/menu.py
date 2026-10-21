@@ -7,6 +7,9 @@ from __future__ import annotations
 import webbrowser
 from typing import TYPE_CHECKING, Any, Callable
 
+from ellmos_tray.navigation import gui_destinations
+from ellmos_tray.runner import LegacyBachIdleRunner
+
 if TYPE_CHECKING:
     import pystray
     from ellmos_tray.app import TrayApp
@@ -45,12 +48,6 @@ class MenuBuilder:
             # Fackel / Resource allocation
             self._append_fackel(items)
 
-            # Activity monitor link
-            items.append(pystray.MenuItem(
-                f"📊 {branding.activity_label} öffnen...",
-                lambda *_: webbrowser.open(f"{self.app.client.base_url}/activity"),
-            ))
-
             # Tool activity
             ct = state.get("current_tool", "")
             lt = state.get("last_tools", [])
@@ -87,22 +84,11 @@ class MenuBuilder:
             lambda *_: webbrowser.open(self.app.client.gui_url),
             default=True,
         ))
-        items.append(pystray.MenuItem(
-            "Agenten Running",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running"),
-        ))
-        items.append(pystray.MenuItem(
-            "Agenten-Werkstatt & Blueprints",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/blueprints"),
-        ))
-        items.append(pystray.MenuItem(
-            "Sessions",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/sessions"),
-        ))
-        items.append(pystray.MenuItem(
-            "Tasks",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/tasks"),
-        ))
+        for label, url in gui_destinations(self.app.client.gui_url):
+            items.append(pystray.MenuItem(
+                label,
+                lambda *_, target=url: webbrowser.open(target),
+            ))
         items.append(pystray.MenuItem(
             branding.messenger_label,
             lambda *_: webbrowser.open(self.app.client.telegram_url),
@@ -189,14 +175,20 @@ class MenuBuilder:
         always_backend = always_slot.get("backend") or "ollama"
         always_rounds = always_slot.get("max_tool_rounds", 25)
         always_mode = always_slot.get("mode", "full")
-        always_enabled = always_slot.get("enabled", True) and self.app.runner.is_enabled
-        always_status_str = "Aktiv" if always_enabled else "Pausiert"
+        always_enabled = always_slot.get("enabled") is True
+        if always_slot.get("enabled") is False:
+            always_status_str = "Living · pausiert"
+        elif always_enabled:
+            always_status_str = "Living · aktiviert"
+        else:
+            always_status_str = "Aktivierung nicht geprüft"
 
         always_subitems: list[Any] = []
         always_subitems.append(pystray.MenuItem(
             "Always-On aktivieren",
             lambda *_: self._toggle_slot_enabled("buddha_always_on"),
             checked=lambda item, en=always_enabled: en,
+            enabled=type(always_slot.get("enabled")) is bool,
         ))
         if models:
             always_model_items = [
@@ -247,7 +239,11 @@ class MenuBuilder:
             or always_slot.get("current_activity")
             or "Wartet auf Leerlauf"
         )
-        always_subitems.append(pystray.MenuItem(f"Aktivität: {act_text[:35]}", None, enabled=False))
+        always_subitems.append(pystray.MenuItem(f"Aktivität: {act_text[:70]}", None, enabled=False))
+        always_subitems.append(pystray.MenuItem(
+            "Modellbindung; Residenz und Laufstatus in Running prüfen",
+            None, enabled=False,
+        ))
         items.append(pystray.MenuItem(
             f"{always_label} [{always_status_str}]: {always_model}",
             pystray.Menu(*always_subitems),
@@ -311,15 +307,25 @@ class MenuBuilder:
             wact = w.get("current_activity", "Bereit")
             wrole = w.get("role", "General")
 
-            start_item = (
-                pystray.MenuItem("⏳ Läuft...", None, enabled=False)
-                if wstatus == "running"
-                else pystray.MenuItem("▶ Starten", self._run_worker_action(wid))
+            execution = w.get("execution")
+            confirmed_running = (
+                w.get("running") is True and isinstance(execution, dict)
+                and execution.get("state") == "running"
+                and execution.get("terminal") is False
             )
+            if confirmed_running:
+                start_item = pystray.MenuItem("⏳ Running", None, enabled=False)
+            elif w.get("worker_active") is True:
+                start_item = pystray.MenuItem("Lauf startet oder wartet", None, enabled=False)
+            elif wstatus == "running":
+                start_item = pystray.MenuItem("Laufstatus nicht bestätigt", None, enabled=False)
+            else:
+                start_item = pystray.MenuItem("▶ Starten", self._run_worker_action(wid))
 
             w_actions = [
                 pystray.MenuItem(f"Rolle: {wrole} | {wturns} Turns", None, enabled=False),
-                pystray.MenuItem(f"Aktivität: {wact[:35]}", None, enabled=False),
+                pystray.MenuItem(f"Profilstatus: {wstatus}", None, enabled=False),
+                pystray.MenuItem(f"Aktivität: {wact[:70]}", None, enabled=False),
                 start_item,
                 pystray.MenuItem(
                     "▶ Fortsetzen" if wstatus == "paused" else "⏸ Pausieren",
@@ -327,16 +333,24 @@ class MenuBuilder:
                 ),
                 pystray.MenuItem("🗑 Worker löschen", self._delete_worker_action(wid)),
             ]
-            workers_subitems.append(pystray.MenuItem(f"{wname} [{wstatus}] ({wmodel})", pystray.Menu(*w_actions)))
+            if confirmed_running:
+                label = "Running"
+            elif w.get("worker_active") is True:
+                label = "Living · wartet"
+            else:
+                label = "Laufstatus nicht geprüft"
+            workers_subitems.append(pystray.MenuItem(
+                f"{wname} [{label}] · Bindung: {wmodel}", pystray.Menu(*w_actions),
+            ))
 
         if workers_subitems:
             workers_subitems.append(pystray.Menu.SEPARATOR)
         workers_subitems.append(pystray.MenuItem(
-            "+ Neuer Worker... (Web GUI)",
-            lambda *_: webbrowser.open(f"{self.app.client.base_url}/activity"),
+            "Agenten verwalten…",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running"),
         ))
         items.append(pystray.MenuItem(
-            f"🛠 Dynamische Worker ({len(self.app.dynamic_workers)})",
+            f"🛠 Hintergrundagenten ({len(self.app.dynamic_workers)})",
             pystray.Menu(*workers_subitems),
         ))
 
@@ -344,7 +358,10 @@ class MenuBuilder:
         import pystray
 
         current_fackel = self.app.state.get("fackel_preference", "compute")
-        fackel_label = "Fackel: Ollama" if current_fackel == "ollama" else "Fackel: Rechenjobs"
+        fackel_label = (
+            "Fackelpriorität: Ollama" if current_fackel == "ollama"
+            else "Fackelpriorität: Rechenjobs"
+        )
         fackel_items = [
             pystray.MenuItem(
                 "Ollama / Chat & Worker bevorzugen",
@@ -399,11 +416,17 @@ class MenuBuilder:
     def _append_idle_worker(self, items: list[Any]) -> None:
         import pystray
 
+        if not isinstance(self.app.runner, LegacyBachIdleRunner):
+            items.append(pystray.MenuItem(
+                "Aufgabenausführung: Backendagenten", None, enabled=False,
+            ))
+            return
+
         is_proc = self.app.runner.is_processing()
         is_en = self.app.runner.is_enabled
         task_name = self.app.runner.get_current_task_name()
 
-        idle_label = "Idle-Modus"
+        idle_label = "Lokaler Legacy-Executor"
         if is_proc:
             idle_label += f": {task_name or 'Arbeitet...'}"
         elif is_en:
@@ -443,8 +466,15 @@ class MenuBuilder:
 
     def _toggle_slot_enabled(self, slot_id: str) -> None:
         slot = self.app.slots.get(slot_id, {})
-        new_enabled = not slot.get("enabled", True)
-        self.app.client.update_slot(slot_id, {"enabled": new_enabled})
+        current_enabled = slot.get("enabled")
+        if type(current_enabled) is not bool:
+            self.app.notify("Aktivierung nicht geprüft; bitte aktualisieren.", self.app.branding.notification_title)
+            self.app.refresh()
+            self.app.update_ui()
+            return
+        result = self.app.client.update_slot(slot_id, {"enabled": not current_enabled})
+        if result is None or result.get("error"):
+            self.app.notify("Aktivierung konnte nicht bestätigt werden.", self.app.branding.notification_title)
         self.app.refresh()
         self.app.update_ui()
 

@@ -114,6 +114,15 @@ class TrayApp:
                 w.get("model"),
                 w.get("current_activity"),
                 w.get("max_tool_rounds"),
+                w.get("running"),
+                w.get("worker_active"),
+                tuple(
+                    (w["execution"] if isinstance(w.get("execution"), dict) else {}).get(key)
+                    for key in (
+                        "state", "terminal", "generation", "start_request_id",
+                        "worker_thread_started", "service_instance",
+                    )
+                ),
             )
             for w in self.dynamic_workers
         )

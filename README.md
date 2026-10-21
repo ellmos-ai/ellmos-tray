@@ -24,7 +24,7 @@
 
 4. **Dynamic Context Menu**
    - **Status & Modes:** Real-time visibility into active mode (`SAFE` / `FULL`) and reasoning (`THINK`).
-   - **Slot Control:** Interactive model, backend, turn limits, and mode configuration for Chat, Always-On, and Connector slots.
+   - **Agent Configuration:** Model bindings, backend, turn limits, and modes for Chat, Always-On, and Connector agents. Activation does not claim a running inference or resident model.
    - **Dynamic Workers:** Inspect, start, pause, resume, and terminate background workers.
    - **Resource Prioritization (Fackel):** Switch priority between local LLM inference (Ollama) and background compute jobs.
    - **Services Health:** Live health indicators for GUI Dashboard (:8000), Control API (:8081), and Ollama (:11434).
@@ -58,6 +58,30 @@ Run with Open Ocean branding:
 ```bash
 ellmos-tray --brand ocean
 ```
+
+### Shared GUI navigation (0.1.1)
+
+All brands open Chat, Tasks, Running/history, Workshop/templates, Inbox, Routines,
+Settings and Sessions on the GUI endpoint. The retired Control API `/activity`
+page is no longer a menu destination. The existing GUI route names remain
+compatible with the shared BACH/Ocean interface.
+
+Set a GUI address independently of the Control API host and port:
+
+```bash
+ellmos-tray --brand bach --host mac-host --port 8081 --gui-url https://gui.example/bach
+```
+
+The GUI base path is preserved. `ELLMOS_GUI_URL` or `BACH_GUI_URL` can also supply
+the address; Ocean additionally supports `OCEAN_GUI_URL`. An explicit CLI address
+takes precedence.
+
+The default `--idle-worker auto` observes and controls the existing backend agents.
+It does not create another local executor. `--idle-worker legacy` is an explicit
+compatibility option for the old local executor. The Always-On activation shown
+in the menu comes from the backend setting; actual execution and model residency
+must be checked in Running. This client update does not start a model or change
+an agent's model binding.
 
 Diagnostic smoke test for PromptBoard integration:
 ```bash

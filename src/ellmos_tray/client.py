@@ -10,6 +10,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Optional
 
+from ellmos_tray.navigation import normalize_gui_url
+
 
 def _resolve_auth_header(explicit: Optional[str] = None) -> Optional[str]:
     """Resolves the Bearer authentication header from explicit arg, env, or credentials file."""
@@ -59,7 +61,10 @@ class ControlApiClient:
         self.host = host
         self.port = port
         self.base_url = f"http://{host}:{port}"
-        self.gui_url = gui_url or f"http://{host}:8000"
+        self.gui_url = normalize_gui_url(
+            gui_url or os.environ.get("ELLMOS_GUI_URL")
+            or os.environ.get("BACH_GUI_URL") or f"http://{host}:8000"
+        )
         self.ollama_url = ollama_url or f"http://{host}:11434"
         self.telegram_url = telegram_url
         self._auth_header = _resolve_auth_header(auth_header)

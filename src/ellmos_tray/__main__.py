@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 
 from ellmos_tray.app import TrayApp
 from ellmos_tray.branding import TrayBranding
+from ellmos_tray.client import ControlApiClient
 from ellmos_tray.lock import acquire_single_instance_lock
 from ellmos_tray.runner import LegacyBachIdleRunner, PassiveTaskDelegate
 
@@ -18,6 +20,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="ELLMOS & BACH Unified System Tray")
     parser.add_argument("--host", default="127.0.0.1", help="Control API Host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8081, help="Control API Port (default: 8081)")
+    parser.add_argument(
+        "--gui-url", default=None,
+        help="Separate GUI-Basisadresse einschließlich eines optionalen Basispfads",
+    )
     parser.add_argument(
         "--brand",
         choices=["ellmos", "bach", "ocean"],
@@ -33,7 +39,7 @@ def main() -> None:
         "--idle-worker",
         choices=["auto", "on", "off", "legacy"],
         default="auto",
-        help="Idle execution mode (default: auto)",
+        help="Backend observer mode; only 'legacy' starts a local idle executor (default: auto)",
     )
     parser.add_argument(
         "--repo-dir",
@@ -53,14 +59,18 @@ def main() -> None:
         branding = TrayBranding.ellmos()
 
     # Determine runner
-    if args.idle_worker == "legacy" or (args.idle_worker == "auto" and args.brand == "bach"):
+    if args.idle_worker == "legacy":
         runner = LegacyBachIdleRunner(repo_dir=args.repo_dir)
     elif args.idle_worker == "off":
         runner = PassiveTaskDelegate(enabled=False)
     else:
         runner = PassiveTaskDelegate(enabled=True)
 
-    tray = TrayApp(branding=branding, host=args.host, port=args.port, runner=runner)
+    gui_url = args.gui_url
+    if not gui_url and args.brand == "ocean":
+        gui_url = os.environ.get("OCEAN_GUI_URL")
+    client = ControlApiClient(host=args.host, port=args.port, gui_url=gui_url)
+    tray = TrayApp(branding=branding, client=client, runner=runner)
 
     if args.smoke_promptboard:
         print(json.dumps(tray.prompt_manager.smoke_snapshot(), ensure_ascii=False, indent=2))

@@ -41,7 +41,7 @@ class TrayBranding:
     })
 
     # Navigation link labels
-    gui_label: str = "GUI Dashboard"
+    gui_label: str = "Oberfläche öffnen"
     chat_label: str = "Web Chat"
     activity_label: str = "Aktivitätsanzeige"
     messenger_label: str = "Telegram"
@@ -70,7 +70,7 @@ class TrayBranding:
                 "buddha_always_on": "⚡ Always-On Worker",
                 "buddha_connector": "📱 Connector",
             },
-            gui_label="ELLMOS Dashboard",
+            gui_label="ELLMOS öffnen",
             chat_label="ELLMOS Chat",
             activity_label="Aktivitätsanzeige",
             messenger_label="Telegram",
@@ -90,7 +90,7 @@ class TrayBranding:
                 "buddha_always_on": "⚡ Buddha Always-On",
                 "buddha_connector": "📱 Buddha Connector",
             },
-            gui_label="GUI Dashboard",
+            gui_label="BACH öffnen",
             chat_label="Buddha Chat",
             activity_label="Aktivitätsanzeige",
             messenger_label="Telegram",
@@ -110,7 +110,7 @@ class TrayBranding:
                 "buddha_always_on": "⚡ Ocean Worker",
                 "buddha_connector": "📱 Ocean Connector",
             },
-            gui_label="Ocean Dashboard",
+            gui_label="Ocean öffnen",
             chat_label="Ocean Chat",
             activity_label="Aktivitätsanzeige",
             messenger_label="Telegram",
