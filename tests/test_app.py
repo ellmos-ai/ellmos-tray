@@ -60,3 +60,41 @@ def test_main_refuses_duplicate_instance(capsys, monkeypatch):
     assert exc.value.code == 3
     err = capsys.readouterr().err
     assert "läuft bereits" in err
+
+
+def test_gui_destinations_exclude_removed_activity_route():
+    from ellmos_tray.navigation import GUI_DESTINATIONS, gui_destinations, normalize_gui_url
+
+    paths = [path for _, path in GUI_DESTINATIONS]
+    assert "/activity" not in paths
+    assert "/agenten/running" in paths
+    assert "/agenten/blueprints" in paths
+    assert "/routinen" in paths
+    assert "/agenten/sessions" in paths
+
+    resolved = dict(gui_destinations("http://127.0.0.1:8000/"))
+    assert resolved["Aufgaben"] == "http://127.0.0.1:8000/tasks"
+    assert normalize_gui_url("http://127.0.0.1:8000/") == "http://127.0.0.1:8000"
+
+
+def test_main_auto_idle_worker_uses_passive_delegate_even_for_bach(monkeypatch):
+    from ellmos_tray.runner import PassiveTaskDelegate
+
+    captured = {}
+
+    class DummyApp:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def run(self):
+            pass
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(sys, "argv", ["ellmos-tray", "--brand", "bach", "--idle-worker", "auto"])
+    monkeypatch.setattr(main_mod, "acquire_single_instance_lock", lambda *_: MagicMock())
+    monkeypatch.setattr(main_mod, "TrayApp", DummyApp)
+
+    main_mod.main()
+    assert isinstance(captured["runner"], PassiveTaskDelegate)
