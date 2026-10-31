@@ -6,8 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from ellmos_tray.app import TrayApp
 from ellmos_tray.branding import TrayBranding
@@ -36,6 +36,22 @@ def main() -> None:
         help="Print PromptBoard tray detection smoke data and exit",
     )
     parser.add_argument(
+        "--check-device",
+        action="store_true",
+        help="Run device acceptance check, print JSON report and exit",
+    )
+    parser.add_argument(
+        "--store-preflight",
+        action="store_true",
+        help="Run Windows Store readiness preflight check, print report and exit",
+    )
+    parser.add_argument(
+        "--start-backend",
+        type=str,
+        default=None,
+        help="Command or script to spawn backend if not already listening",
+    )
+    parser.add_argument(
         "--idle-worker",
         choices=["auto", "on", "off", "legacy"],
         default="auto",
@@ -49,6 +65,14 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Preflight tool check if requested
+    if args.store_preflight:
+        from tools.store_readiness import run_store_readiness_check
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        success, report = run_store_readiness_check(repo_root)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        sys.exit(0 if success else 1)
 
     # Resolve branding
     if args.brand == "bach":
@@ -70,11 +94,20 @@ def main() -> None:
     if not gui_url and args.brand == "ocean":
         gui_url = os.environ.get("OCEAN_GUI_URL")
     client = ControlApiClient(host=args.host, port=args.port, gui_url=gui_url)
-    tray = TrayApp(branding=branding, client=client, runner=runner)
+    tray = TrayApp(branding=branding, client=client, host=args.host, port=args.port, runner=runner)
 
     if args.smoke_promptboard:
         print(json.dumps(tray.prompt_manager.smoke_snapshot(), ensure_ascii=False, indent=2))
         return
+
+    if args.check_device:
+        report = tray.run_device_acceptance_check()
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        sys.exit(0 if report.get("passed") else 1)
+
+    # Spawn backend if requested and not running
+    if args.start_backend:
+        tray.backend_manager.spawn_backend(args.start_backend)
 
     lock_file = branding.get_lock_file()
     lock = acquire_single_instance_lock(lock_file)

@@ -13,22 +13,27 @@
    - Fully customizable application IDs, menu labels, notification titles, and lock files.
    - Dynamic RGBA status icons reflecting operational state (Safe Mode, Full/Write Mode, Active Processing, Disconnected).
 
-2. **Decoupled Architecture & Task Execution**
+2. **Decoupled Architecture & Process Ownership (v0.1.2)**
    - Clean separation between UI state observation and background task execution.
-   - Passive observer mode by default (execution delegated to `agents-heart` or background worker pools).
+   - **Start/Attach Detection:** Automatically detects whether backend is already running (`ATTACHED`) or launched by tray (`SPAWNED`).
+   - **Clear Process Ownership:** Graceful termination on shutdown only for managed child processes; pre-existing backends are left untouched.
    - Optional pluggable execution runners (`TaskExecutionDelegate`, `LegacyBachIdleRunner`) for full backward compatibility without hardcoded paths.
 
-3. **Robust Single-Instance Guarantees**
+3. **Resilience & Recovery (v0.1.2)**
+   - **Auto-Reconnect:** State machine (`CONNECTED`, `DISCONNECTED`, `RECONNECTING`) with exponential backoff and connection restored notifications.
+   - **Crash- & Sleep-Recovery:** Detects machine suspend/resume cycles, refreshes sockets and states without deadlocking or stalls.
+   - **Device Acceptance Check:** Built-in environment verification probing loopback network sockets, service ports, and storage permissions.
+
+4. **Performance & Caching (v0.1.2)**
+   - **Icon & Thumbnail Cache:** `IconCache` and `ThumbnailCache` eliminate redundant PIL allocations, font disk loads, and repaints.
+   - **Adaptive Polling:** Dynamic polling frequencies (active 2s during processing, normal 5s when idle, backed off up to 30s when reconnecting).
+
+5. **Robust Single-Instance Guarantees**
    - Fail-closed single-instance enforcement via OS byte-range locks (`msvcrt` on Windows, `fcntl.flock` on POSIX).
    - Crash-resilient: Locks are held at the OS kernel file handle level and are immediately freed if a process terminates.
 
-4. **Dynamic Context Menu**
-   - **Status & Modes:** Real-time visibility into active mode (`SAFE` / `FULL`) and reasoning (`THINK`).
-   - **Agent Configuration:** Model bindings, backend, turn limits, and modes for Chat, Always-On, and Connector agents. Activation does not claim a running inference or resident model.
-   - **Dynamic Workers:** Inspect, start, pause, resume, and terminate background workers.
-   - **Resource Prioritization (Fackel):** Switch priority between local LLM inference (Ollama) and background compute jobs.
-   - **Services Health:** Live health indicators for GUI Dashboard (:8000), Control API (:8081), and Ollama (:11434).
-   - **Prompt Launcher:** Integrates with PromptBoard libraries and native JSON prompt collections with single-click clipboard copying or direct execution.
+6. **Windows Store & MSIX Readiness (v0.1.2)**
+   - Preflight validation tool `tools/store_readiness.py` verifying MSIX manifests, publisher/identity formatting, store assets, WACK criteria, and loopback documentation.
 
 ---
 
@@ -59,29 +64,17 @@ Run with Open Ocean branding:
 ellmos-tray --brand ocean
 ```
 
-### Shared GUI navigation (0.1.1)
-
-All brands open Chat, Tasks, Running/history, Workshop/templates, Inbox, Routines,
-Settings and Sessions on the GUI endpoint. The retired Control API `/activity`
-page is no longer a menu destination. The existing GUI route names remain
-compatible with the shared BACH/Ocean interface.
-
-Set a GUI address independently of the Control API host and port:
-
+Device environment acceptance check:
 ```bash
-ellmos-tray --brand bach --host mac-host --port 8081 --gui-url https://gui.example/bach
+ellmos-tray --check-device
 ```
 
-The GUI base path is preserved. `ELLMOS_GUI_URL` or `BACH_GUI_URL` can also supply
-the address; Ocean additionally supports `OCEAN_GUI_URL`. An explicit CLI address
-takes precedence.
-
-The default `--idle-worker auto` observes and controls the existing backend agents.
-It does not create another local executor. `--idle-worker legacy` is an explicit
-compatibility option for the old local executor. The Always-On activation shown
-in the menu comes from the backend setting; actual execution and model residency
-must be checked in Running. This client update does not start a model or change
-an agent's model binding.
+Windows Store & MSIX readiness preflight check:
+```bash
+ellmos-tray --store-preflight
+# or directly:
+python tools/store_readiness.py --json
+```
 
 Diagnostic smoke test for PromptBoard integration:
 ```bash
@@ -93,21 +86,16 @@ ellmos-tray --smoke-promptboard
 ## Python API Usage
 
 ```python
-from ellmos_tray import TrayApp, TrayBranding
+from ellmos_tray import TrayApp, TrayBranding, check_device_acceptance
 
 # 1. Using predefined brandings
-app = TrayApp(branding=TrayBranding.bach())
+app = TrayApp(branding=TrayBranding.ocean())
 
-# 2. Or custom branding
-custom_branding = TrayBranding(
-    app_id="my-assistant",
-    app_title="My AI Assistant",
-    icon_char="A",
-    notification_title="Assistant",
-)
-app = TrayApp(branding=custom_branding, host="127.0.0.1", port=8081)
+# 2. Run device environment check
+report = check_device_acceptance(branding=app.branding)
+print(f"Device acceptance passed: {report.passed}")
 
-# Run the system tray
+# 3. Run the system tray
 app.run()
 ```
 
@@ -118,6 +106,7 @@ app.run()
 ```bash
 pytest
 ruff check .
+python tools/store_readiness.py
 ```
 
 ---

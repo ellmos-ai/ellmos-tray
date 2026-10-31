@@ -2,6 +2,7 @@
 Unit tests for dynamic tray icon rendering and color calculations.
 """
 from PIL import Image
+
 from ellmos_tray.branding import TrayBranding
 from ellmos_tray.icon import generate_tray_icon, get_status_color
 

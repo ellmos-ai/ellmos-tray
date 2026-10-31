@@ -4,6 +4,7 @@ Unit tests for ControlApiClient HTTP calls and error resilience.
 import json
 import urllib.error
 from unittest.mock import MagicMock, patch
+
 from ellmos_tray.client import ControlApiClient
 
 

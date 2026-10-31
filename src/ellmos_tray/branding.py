@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -16,9 +16,9 @@ class TrayBranding:
     app_id: str = "ellmos-tray"
     app_title: str = "ELLMOS System Tray"
     icon_char: str = "E"
-    icon_path: Optional[Path] = None
+    icon_path: Path | None = None
     notification_title: str = "ELLMOS"
-    lock_file: Optional[Path] = None
+    lock_file: Path | None = None
 
     # Colors (RGBA)
     color_connected: tuple[int, int, int, int] = (0, 200, 100, 255)       # Green
@@ -120,8 +120,8 @@ class TrayBranding:
     def from_dict(cls, data: dict[str, Any]) -> TrayBranding:
         """Builds branding from a configuration dictionary."""
         clean = dict(data)
-        if "lock_file" in clean and clean["lock_file"]:
+        if clean.get("lock_file"):
             clean["lock_file"] = Path(clean["lock_file"])
-        if "icon_path" in clean and clean["icon_path"]:
+        if clean.get("icon_path"):
             clean["icon_path"] = Path(clean["icon_path"])
         return cls(**clean)

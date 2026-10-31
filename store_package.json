@@ -1,0 +1,16 @@
+{
+  "app_name": "ELLMOS Tray",
+  "publisher": "CN=ELLMOS-AI-OpenSource",
+  "publisher_display": "ELLMOS AI",
+  "identity_name": "ELLMOS.Tray",
+  "version": "0.1.2.0",
+  "description": "Pluggable System Tray and Desktop Quick Control Client for ELLMOS, BACH, and OCEAN local AI environments.",
+  "executable": "ellmos-tray.exe",
+  "capabilities": [
+    "runFullTrust"
+  ],
+  "category": "DeveloperTools",
+  "age_rating": "3+",
+  "privacy_url": "https://github.com/ellmos-ai/ellmos-tray/blob/master/PRIVACY_POLICY.md",
+  "support_url": "https://github.com/ellmos-ai/ellmos-tray/issues"
+}

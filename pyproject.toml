@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ellmos-tray"
-version = "0.1.1"
+version = "0.1.2"
 description = "Pluggable, modular system tray and quick control client for ELLMOS and BACH desktop environments"
 readme = "README.md"
 license = "MIT"
@@ -52,3 +52,7 @@ pythonpath = ["src"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "SIM105"]

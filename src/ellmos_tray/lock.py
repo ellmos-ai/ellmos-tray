@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
-def acquire_single_instance_lock(lock_path: Path) -> Optional[Any]:
+def acquire_single_instance_lock(lock_path: Path) -> Any | None:
     """Return an open, exclusively locked handle -- or None if another tray holds it.
 
     Single-instance contract for the tray: the lock is an OS-held byte-range
@@ -20,7 +20,7 @@ def acquire_single_instance_lock(lock_path: Path) -> Optional[Any]:
     """
     try:
         lock_path.parent.mkdir(parents=True, exist_ok=True)
-        handle = open(lock_path, "a+b")
+        handle = open(lock_path, "a+b")  # noqa: SIM115
     except OSError:
         return None
 
@@ -44,7 +44,7 @@ def acquire_single_instance_lock(lock_path: Path) -> Optional[Any]:
     return handle
 
 
-def release_single_instance_lock(handle: Optional[Any]) -> None:
+def release_single_instance_lock(handle: Any | None) -> None:
     """Releases the locked file handle and closes it cleanly."""
     if handle is None:
         return

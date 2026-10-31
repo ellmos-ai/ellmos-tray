@@ -5,13 +5,15 @@ Constructs dynamic pystray menus reflecting status, model slots, dynamic workers
 from __future__ import annotations
 
 import webbrowser
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from ellmos_tray.navigation import gui_destinations
 from ellmos_tray.runner import LegacyBachIdleRunner
 
 if TYPE_CHECKING:
     import pystray
+
     from ellmos_tray.app import TrayApp
 
 
@@ -35,6 +37,14 @@ class MenuBuilder:
             items.append(pystray.MenuItem(
                 f"Modus: {mode_str} | Denken: {think_str}", None, enabled=False
             ))
+            proc_info = self.app.backend_manager.get_info()
+            if proc_info.get("is_managed"):
+                proc_str = f"Prozess: Verwaltet (PID {proc_info.get('pid')})"
+            elif proc_info.get("ownership") == "attached":
+                proc_str = f"Prozess: Verbunden (Angehängt :{self.app.client.port})"
+            else:
+                proc_str = f"Prozess: Online (:{self.app.client.port})"
+            items.append(pystray.MenuItem(proc_str, None, enabled=False))
             items.append(pystray.Menu.SEPARATOR)
 
             # Slots configuration
@@ -61,6 +71,10 @@ class MenuBuilder:
                 ))
         else:
             items.append(pystray.MenuItem("Nicht verbunden", None, enabled=False))
+            conn_state = getattr(self.app, "connection_state", None)
+            if conn_state and getattr(conn_state, "value", str(conn_state)) == "reconnecting":
+                delay = int(getattr(self.app, "reconnect_delay", 1))
+                items.append(pystray.MenuItem(f"Wiederverbindung aktiv ({delay}s)", None, enabled=False))
             items.append(pystray.MenuItem(f"Versuche: {self.app.client.base_url}", None, enabled=False))
 
         items.append(pystray.Menu.SEPARATOR)
@@ -78,7 +92,7 @@ class MenuBuilder:
 
         items.append(pystray.Menu.SEPARATOR)
 
-        # ── 5. Quick links ──
+        # ── 5. Quick links & Tools ──
         items.append(pystray.MenuItem(
             branding.gui_label,
             lambda *_: webbrowser.open(self.app.client.gui_url),
@@ -93,6 +107,16 @@ class MenuBuilder:
             branding.messenger_label,
             lambda *_: webbrowser.open(self.app.client.telegram_url),
         ))
+
+        def _trigger_device_check(*_: Any) -> None:
+            res = self.app.run_device_acceptance_check()
+            stat = "Erfolgreich" if res.get("passed") else "Fehler"
+            self.app.notify(
+                f"Geräteabnahme: {stat} ({len(res.get('checks', {}))} Tests)",
+                self.app.branding.notification_title,
+            )
+
+        items.append(pystray.MenuItem("Geräteabnahme prüfen", _trigger_device_check))
 
         items.append(pystray.Menu.SEPARATOR)
         items.append(pystray.MenuItem("Beenden", lambda *_: self.app.stop()))
@@ -134,7 +158,7 @@ class MenuBuilder:
                 self._make_slot_action("buddha_chat", {"backend": name}),
                 checked=lambda item, n=name, b=chat_backend: n.lower() == b.lower(),
             )
-            for name in backends.keys()
+            for name in backends
         ]
         if chat_backend_items:
             chat_subitems.append(pystray.MenuItem(f"Backend: {chat_backend}", pystray.Menu(*chat_backend_items)))
@@ -207,7 +231,7 @@ class MenuBuilder:
                 self._make_slot_action("buddha_always_on", {"backend": name}),
                 checked=lambda item, n=name, b=always_backend: n.lower() == b.lower(),
             )
-            for name in backends.keys()
+            for name in backends
         ]
         if always_backend_items:
             always_subitems.append(pystray.MenuItem(f"Backend: {always_backend}", pystray.Menu(*always_backend_items)))
@@ -274,7 +298,7 @@ class MenuBuilder:
                 self._make_slot_action("buddha_connector", {"backend": name}),
                 checked=lambda item, n=name, b=conn_backend: n.lower() == b.lower(),
             )
-            for name in backends.keys()
+            for name in backends
         ]
         if conn_backend_items:
             conn_subitems.append(pystray.MenuItem(f"Backend: {conn_backend}", pystray.Menu(*conn_backend_items)))

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from urllib.parse import urlsplit
 
-
 GUI_DESTINATIONS = (
     ("Chat", "/chat"),
     ("Aufgaben", "/tasks"),

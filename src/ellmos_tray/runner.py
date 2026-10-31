@@ -6,12 +6,12 @@ Allows decoupling the desktop UI from the background task execution engine
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ellmos_tray.app import TrayApp
@@ -22,13 +22,12 @@ class TaskExecutionDelegate:
 
     def on_poll_tick(self, app: TrayApp) -> None:
         """Called on every polling cycle while the tray is running."""
-        pass
 
     def is_processing(self) -> bool:
         """Returns True if a task is currently executing."""
         return False
 
-    def get_current_task_name(self) -> Optional[str]:
+    def get_current_task_name(self) -> str | None:
         """Returns the title of the currently executing task, if any."""
         return None
 
@@ -71,8 +70,8 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
 
     def __init__(
         self,
-        repo_dir: Optional[Path] = None,
-        enabled: Optional[bool] = None,
+        repo_dir: Path | None = None,
+        enabled: bool | None = None,
     ):
         if enabled is not None:
             self._enabled = enabled
@@ -85,9 +84,9 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             )
         self.repo_dir = repo_dir or self._detect_repo_dir()
         self.consecutive_idle = 0
-        self.current_task_name: Optional[str] = None
+        self.current_task_name: str | None = None
         self.processing = False
-        self.pending_task: Optional[tuple[Any, ...]] = None
+        self.pending_task: tuple[Any, ...] | None = None
         self._recurring_tick = 0
 
     def _detect_repo_dir(self) -> Path:
@@ -116,7 +115,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
     def is_processing(self) -> bool:
         return self.processing
 
-    def get_current_task_name(self) -> Optional[str]:
+    def get_current_task_name(self) -> str | None:
         return self.current_task_name
 
     def on_poll_tick(self, app: TrayApp) -> None:

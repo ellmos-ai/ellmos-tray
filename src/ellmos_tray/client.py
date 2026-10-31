@@ -8,12 +8,12 @@ import os
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ellmos_tray.navigation import normalize_gui_url
 
 
-def _resolve_auth_header(explicit: Optional[str] = None) -> Optional[str]:
+def _resolve_auth_header(explicit: str | None = None) -> str | None:
     """Resolves the Bearer authentication header from explicit arg, env, or credentials file."""
     if explicit:
         return explicit
@@ -53,10 +53,10 @@ class ControlApiClient:
         self,
         host: str = "127.0.0.1",
         port: int = 8081,
-        gui_url: Optional[str] = None,
-        ollama_url: Optional[str] = None,
+        gui_url: str | None = None,
+        ollama_url: str | None = None,
         telegram_url: str = "https://t.me/bach_assistant_bot",
-        auth_header: Optional[str] = None,
+        auth_header: str | None = None,
     ):
         self.host = host
         self.port = port
@@ -70,21 +70,21 @@ class ControlApiClient:
         self._auth_header = _resolve_auth_header(auth_header)
 
     @property
-    def auth_header(self) -> Optional[str]:
+    def auth_header(self) -> str | None:
         return self._auth_header
 
     @auth_header.setter
-    def auth_header(self, value: Optional[str]) -> None:
+    def auth_header(self, value: str | None) -> None:
         self._auth_header = value
 
     def api_request(
         self,
         method: str,
         path: str,
-        body: Optional[dict[str, Any]] = None,
-        base: Optional[str] = None,
+        body: dict[str, Any] | None = None,
+        base: str | None = None,
         timeout: int = 8,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Sends an HTTP request with JSON encoding and returns decoded JSON."""
         target_base = base or self.base_url
         url = target_base + path
@@ -117,62 +117,62 @@ class ControlApiClient:
         except (urllib.error.URLError, OSError):
             return False
 
-    def get_status(self) -> Optional[dict[str, Any]]:
+    def get_status(self) -> dict[str, Any] | None:
         return self.api_request("GET", "/api/status", timeout=8)
 
-    def get_backends(self) -> Optional[dict[str, Any]]:
+    def get_backends(self) -> dict[str, Any] | None:
         return self.api_request("GET", "/api/backends")
 
-    def get_models(self) -> Optional[dict[str, Any]]:
+    def get_models(self) -> dict[str, Any] | None:
         return self.api_request("GET", "/api/models")
 
-    def get_slots(self) -> Optional[dict[str, Any]]:
+    def get_slots(self) -> dict[str, Any] | None:
         return self.api_request("GET", "/api/slots")
 
-    def set_backend(self, name: str, model: Optional[str] = None) -> Optional[dict[str, Any]]:
+    def set_backend(self, name: str, model: str | None = None) -> dict[str, Any] | None:
         payload: dict[str, Any] = {"name": name}
         if model:
             payload["model"] = model
         return self.api_request("POST", "/api/backend", payload)
 
-    def set_model(self, model: str) -> Optional[dict[str, Any]]:
+    def set_model(self, model: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/model", {"model": model})
 
-    def set_mode(self, mode: str) -> Optional[dict[str, Any]]:
+    def set_mode(self, mode: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/mode", {"mode": mode})
 
-    def set_think(self, think: bool) -> Optional[dict[str, Any]]:
+    def set_think(self, think: bool) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/think", {"think": think})
 
-    def set_max_tool_rounds(self, rounds: int) -> Optional[dict[str, Any]]:
+    def set_max_tool_rounds(self, rounds: int) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/max_tool_rounds", {"rounds": rounds})
 
-    def set_fackel(self, preference: str) -> Optional[dict[str, Any]]:
+    def set_fackel(self, preference: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/fackel", {"preference": preference})
 
-    def update_slot(self, slot_id: str, updates: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def update_slot(self, slot_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/slots", {"slot_id": slot_id, "updates": updates})
 
-    def run_worker(self, worker_id: str) -> Optional[dict[str, Any]]:
+    def run_worker(self, worker_id: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/workers/run", {"id": worker_id})
 
-    def toggle_worker(self, worker_id: str, new_status: str) -> Optional[dict[str, Any]]:
+    def toggle_worker(self, worker_id: str, new_status: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/workers/toggle", {"id": worker_id, "status": new_status})
 
-    def delete_worker(self, worker_id: str) -> Optional[dict[str, Any]]:
+    def delete_worker(self, worker_id: str) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/workers/delete", {"id": worker_id})
 
     def send_chat(
         self,
         prompt: str,
         chat_id: str = "tray-prompt",
-        mode: Optional[str] = None,
+        mode: str | None = None,
         timeout: int = 300,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         payload: dict[str, Any] = {"prompt": prompt, "chat_id": chat_id}
         if mode:
             payload["mode"] = mode
         return self.api_request("POST", "/api/chat", payload, timeout=timeout)
 
-    def get_history(self, chat_id: str) -> Optional[dict[str, Any]]:
+    def get_history(self, chat_id: str) -> dict[str, Any] | None:
         return self.api_request("GET", f"/api/history?chat_id={chat_id}")

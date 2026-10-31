@@ -2,6 +2,7 @@
 Unit tests for TrayBranding configuration and factory presets.
 """
 from pathlib import Path
+
 from ellmos_tray.branding import TrayBranding
 
 

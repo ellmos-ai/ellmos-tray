@@ -4,6 +4,7 @@ Unit tests for TrayApp lifecycle, notifications, and CLI entry point.
 import json
 import sys
 from unittest.mock import MagicMock
+
 import pytest
 
 from ellmos_tray import __main__ as main_mod

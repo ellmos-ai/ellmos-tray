@@ -3,6 +3,7 @@ Unit tests for PromptManager and PromptBoard library loading.
 """
 import json
 from unittest.mock import patch
+
 from ellmos_tray.prompts import DEFAULT_PROMPTS, PromptManager
 
 

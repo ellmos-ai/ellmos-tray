@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any
 
 DEFAULT_PROMPTS = {
     "Aufgaben": {
@@ -36,7 +36,7 @@ ENV_APP_KEYS = ("ELLMOS_PROMPTBOARD_APP", "BACH_PROMPTBOARD_APP")
 class PromptManager:
     """Discovers, loads, and manages prompts and PromptBoard application integration."""
 
-    def __init__(self, custom_library_path: Optional[Path] = None):
+    def __init__(self, custom_library_path: Path | None = None):
         self.custom_library_path = custom_library_path
         self.prompt_source: str = "defaults"
         self.prompts: dict[str, dict[str, str]] = self.load_prompts()
@@ -84,7 +84,7 @@ class PromptManager:
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {}
 
-    def _promptboard_project_dir(self) -> Optional[Path]:
+    def _promptboard_project_dir(self) -> Path | None:
         user_profile = os.environ.get("USERPROFILE")
         if not user_profile:
             return None
@@ -149,7 +149,7 @@ class PromptManager:
             ])
         return candidates
 
-    def find_app_path(self) -> Optional[Path]:
+    def find_app_path(self) -> Path | None:
         for candidate in self.get_app_candidates():
             if candidate.exists():
                 return candidate
