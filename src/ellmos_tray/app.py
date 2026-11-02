@@ -87,6 +87,13 @@ class TrayApp:
             "smarthome_robotics": False,
             "ollama": True,
         }
+        self.talk_config: dict[str, Any] = {
+            "persona": "buddha",
+            "operating_mode": "ptt",
+            "primary_model": "qwen3.8:27b-mlx",
+            "fast_relay_model": "smollm2:360m",
+            "summon_policy": "knock",
+        }
 
         # Connection & Reconnect state machine
         self.connection_state: ConnectionState = ConnectionState.DISCONNECTED
@@ -189,6 +196,14 @@ class TrayApp:
             for k, v in perms_resp["permissions"].items():
                 if k in self.permissions:
                     self.permissions[k] = bool(v)
+        if hasattr(self.client, "get_talk_config"):
+            talk_resp = self.client.get_talk_config()
+            if isinstance(talk_resp, dict) and talk_resp.get("ok"):
+                cfg = talk_resp.get("config", talk_resp)
+                if isinstance(cfg, dict):
+                    for k in ("persona", "operating_mode", "primary_model", "fast_relay_model", "summon_policy"):
+                        if k in cfg and cfg[k]:
+                            self.talk_config[k] = cfg[k]
 
     def run_device_acceptance_check(self) -> dict[str, Any]:
         """Runs the device acceptance check and returns a structured report dictionary."""
@@ -262,6 +277,7 @@ class TrayApp:
             slot_sig,
             tuple(sorted(self.services.items())),
             tuple(sorted(self.permissions.items())),
+            tuple(sorted(self.talk_config.items())),
             proc_info.get("ownership"),
             proc_info.get("pid"),
         )

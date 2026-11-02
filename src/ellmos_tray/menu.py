@@ -323,6 +323,83 @@ class MenuBuilder:
         ))
         items.append(pystray.MenuItem(f"{conn_label}: {conn_model}", pystray.Menu(*conn_subitems)))
 
+        # Talk / Funkgerät Slot
+        talk_cfg = getattr(self.app, "talk_config", {})
+        talk_mode = talk_cfg.get("operating_mode", "ptt")
+        talk_persona = talk_cfg.get("persona", "buddha")
+        talk_model = talk_cfg.get("primary_model") or chat_model
+        talk_summon = talk_cfg.get("summon_policy", "knock")
+        talk_mode_labels = {
+            "ptt": "Funkgerät · PTT",
+            "duplex": "Live Duplex",
+            "wake_word": "Wake-Word",
+            "off": "Stumm",
+        }
+        talk_mode_items = [
+            pystray.MenuItem(
+                label,
+                self._make_talk_config_action({"operating_mode": mode_key}),
+                checked=lambda item, mk=mode_key, tm=talk_mode: tm == mk,
+            )
+            for mode_key, label in (
+                ("ptt", "📻 Funkgerät (Push-to-Talk)"),
+                ("duplex", "🎙️ Live-Gespräch (Duplex)"),
+                ("wake_word", "👂 Wake-Word ('Hey Buddha')"),
+                ("off", "🔇 Stumm / Aus"),
+            )
+        ]
+        talk_persona_items = [
+            pystray.MenuItem(
+                label,
+                self._make_talk_config_action({"persona": p_key}),
+                checked=lambda item, pk=p_key, tp=talk_persona: tp == pk,
+            )
+            for p_key, label in (
+                ("buddha", "🧘 Buddha (Zentrales Bewusstsein)"),
+                ("claude", "🎭 Claude (Architektur & Tiefe)"),
+                ("gemini", "✨ Gemini (Research & Multimodal)"),
+                ("codex", "⚙️ GPT / Codex (Engineering)"),
+            )
+        ]
+        talk_summon_items = [
+            pystray.MenuItem(
+                label,
+                self._make_talk_config_action({"summon_policy": s_key}),
+                checked=lambda item, sk=s_key, ts=talk_summon: ts == sk,
+            )
+            for s_key, label in (
+                ("knock", "🔔 Anklopfen im Header (Ring + Banner)"),
+                ("auto_popup", "⚡ Direkt Funkgerät-Pop-up öffnen"),
+                ("muted", "🔕 Nicht stören (Nur Text-Chat)"),
+            )
+        ]
+        talk_subitems: list[Any] = [
+            pystray.MenuItem(
+                f"Betriebsart: {talk_mode_labels.get(talk_mode, talk_mode)}",
+                pystray.Menu(*talk_mode_items),
+            ),
+            pystray.MenuItem(
+                f"Persona / Modell-Slot: {talk_persona.capitalize()}",
+                pystray.Menu(*talk_persona_items),
+            ),
+            pystray.MenuItem(
+                f"Agenten-Ruf (Summon): {talk_summon}",
+                pystray.Menu(*talk_summon_items),
+            ),
+            pystray.MenuItem(
+                "🎙️ Begleitfenster öffnen (Companion)",
+                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/talk?companion=1"),
+            ),
+            pystray.MenuItem(
+                "⚡ In Living & Running konfigurieren...",
+                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running#talk-slot"),
+            ),
+        ]
+        items.append(pystray.MenuItem(
+            f"📻 Buddha Talk [{talk_mode_labels.get(talk_mode, talk_mode)}]: {talk_model}",
+            pystray.Menu(*talk_subitems),
+        ))
+
     def _append_dynamic_workers(self, items: list[Any]) -> None:
         import pystray
 
@@ -401,6 +478,11 @@ class MenuBuilder:
                 "Rechenjobs bevorzugen (Compute)",
                 lambda *_: self._set_fackel("compute"),
                 checked=lambda item: self.app.state.get("fackel_preference", "compute") == "compute",
+            ),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                "🔓 Modell jetzt für andere Prozesse freigeben (Compute-Vorrang + Unload)",
+                lambda *_: self._release_model_for_compute(),
             ),
         ]
         items.append(pystray.MenuItem(fackel_label, pystray.Menu(*fackel_items)))
@@ -554,6 +636,32 @@ class MenuBuilder:
             self.app.notify(f"Fackel: {label} bevorzugt", self.app.branding.notification_title)
         self.app.refresh()
         self.app.update_ui()
+
+    def _release_model_for_compute(self) -> None:
+        current_model = self.app.state.get("model")
+        if hasattr(self.app.client, "release_model_for_compute"):
+            res = self.app.client.release_model_for_compute(current_model)
+        else:
+            self.app.client.set_fackel("compute")
+            self.app.client.update_slot("buddha_always_on", {"enabled": False})
+            res = {"ok": True}
+        self.app.state["fackel_preference"] = "compute"
+        self.app.notify(
+            "Modell für andere Prozesse freigegeben (Fackel=Compute, Always-On pausiert).",
+            self.app.branding.notification_title,
+        )
+        self.app.refresh()
+        self.app.update_ui()
+
+    def _make_talk_config_action(self, updates: dict[str, Any]) -> Callable[..., None]:
+        def action(*_):
+            talk_cfg = getattr(self.app, "talk_config", {})
+            talk_cfg.update(updates)
+            if hasattr(self.app.client, "update_talk_config"):
+                self.app.client.update_talk_config(updates)
+            self.app.refresh()
+            self.app.update_ui()
+        return action
 
     def _run_worker_action(self, worker_id: str) -> Callable[..., None]:
         def action(*_):

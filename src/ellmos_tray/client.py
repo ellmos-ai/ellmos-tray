@@ -183,3 +183,30 @@ class ControlApiClient:
 
     def update_permissions(self, updates: dict[str, bool]) -> dict[str, Any] | None:
         return self.api_request("POST", "/api/permissions", {"permissions": updates}, base=self.gui_url)
+
+    def get_talk_config(self) -> dict[str, Any] | None:
+        return self.api_request("GET", "/api/talk/config", base=self.gui_url, timeout=3)
+
+    def update_talk_config(self, updates: dict[str, Any]) -> dict[str, Any] | None:
+        return self.api_request("POST", "/api/talk/config", updates, base=self.gui_url, timeout=4)
+
+    def release_model_for_compute(self, model: str | None = None) -> dict[str, Any]:
+        """Switches Fackel to compute, pauses Always-On, and requests Ollama keep_alive=0."""
+        fackel_res = self.set_fackel("compute")
+        slot_res = self.update_slot("buddha_always_on", {"enabled": False})
+        unloaded = False
+        if model and model != "?":
+            unload_res = self.api_request(
+                "POST",
+                "/api/generate",
+                {"model": model, "keep_alive": 0},
+                base=self.ollama_url,
+                timeout=3,
+            )
+            unloaded = unload_res is not None
+        return {
+            "ok": fackel_res is not None,
+            "fackel": "compute",
+            "always_on_paused": bool(slot_res and slot_res.get("ok")),
+            "ollama_unloaded": unloaded,
+        }
