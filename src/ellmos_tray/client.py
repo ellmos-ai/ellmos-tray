@@ -176,3 +176,10 @@ class ControlApiClient:
 
     def get_history(self, chat_id: str) -> dict[str, Any] | None:
         return self.api_request("GET", f"/api/history?chat_id={chat_id}")
+
+
+    def get_permissions(self) -> dict[str, Any] | None:
+        return self.api_request("GET", "/api/permissions", base=self.gui_url)
+
+    def update_permissions(self, updates: dict[str, bool]) -> dict[str, Any] | None:
+        return self.api_request("POST", "/api/permissions", {"permissions": updates}, base=self.gui_url)

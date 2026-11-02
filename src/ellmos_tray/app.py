@@ -76,6 +76,17 @@ class TrayApp:
         self.slots: dict[str, Any] = {}
         self.dynamic_workers: list[dict[str, Any]] = []
         self.services: dict[str, bool] = {"gui": False, "control": False, "ollama": False}
+        self.permissions: dict[str, bool] = {
+            "system_tools": True,
+            "browser_control": True,
+            "camera": False,
+            "microphone": False,
+            "screen_capture": True,
+            "voice_tts": False,
+            "speech_to_text": True,
+            "smarthome_robotics": False,
+            "ollama": True,
+        }
 
         # Connection & Reconnect state machine
         self.connection_state: ConnectionState = ConnectionState.DISCONNECTED
@@ -173,6 +184,11 @@ class TrayApp:
         self.services["control"] = self.state["connected"]
         self.services["gui"] = self.client.check_url(self.client.gui_url + "/")
         self.services["ollama"] = self.client.check_url(self.client.ollama_url + "/api/tags")
+        perms_resp = self.client.get_permissions()
+        if isinstance(perms_resp, dict) and isinstance(perms_resp.get("permissions"), dict):
+            for k, v in perms_resp["permissions"].items():
+                if k in self.permissions:
+                    self.permissions[k] = bool(v)
 
     def run_device_acceptance_check(self) -> dict[str, Any]:
         """Runs the device acceptance check and returns a structured report dictionary."""
@@ -245,6 +261,7 @@ class TrayApp:
             worker_sig,
             slot_sig,
             tuple(sorted(self.services.items())),
+            tuple(sorted(self.permissions.items())),
             proc_info.get("ownership"),
             proc_info.get("pid"),
         )

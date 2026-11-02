@@ -79,7 +79,8 @@ class MenuBuilder:
 
         items.append(pystray.Menu.SEPARATOR)
 
-        # ── 2. Services ──
+        # ── 2. Permissions & Services ──
+        self._append_permissions(items)
         self._append_services(items)
 
         # ── 3. PromptBoard / Prompts ──
@@ -97,6 +98,10 @@ class MenuBuilder:
             branding.gui_label,
             lambda *_: webbrowser.open(self.app.client.gui_url),
             default=True,
+        ))
+        items.append(pystray.MenuItem(
+            "🎙️ ELLMOS Talk (Live-Stimme)",
+            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/talk"),
         ))
         for label, url in gui_destinations(self.app.client.gui_url):
             items.append(pystray.MenuItem(
@@ -399,6 +404,43 @@ class MenuBuilder:
             ),
         ]
         items.append(pystray.MenuItem(fackel_label, pystray.Menu(*fackel_items)))
+
+    PERMISSION_LABELS: tuple[tuple[str, str], ...] = (
+        ("system_tools", "💻 System-Tools (Shell & Skripte)"),
+        ("browser_control", "🌐 Browser-Steuerung (Web-Proxy)"),
+        ("camera", "📷 Kamera (Präsenz & Vision)"),
+        ("microphone", "🎙️ Mikrofon (Zuhören & Wake-Word)"),
+        ("screen_capture", "🖥️ Bildschirmaufnahme (Open-Compute)"),
+        ("voice_tts", "🔊 Sprachausgabe (Voice / TTS)"),
+        ("speech_to_text", "🗣️ Spracheingabe (Speech-to-Text)"),
+        ("smarthome_robotics", "🏠 SmartHome & Robotik"),
+        ("ollama", "🦙 Lokale Ollama-Modelle"),
+    )
+
+    def _append_permissions(self, items: list[Any]) -> None:
+        import pystray
+
+        perms = getattr(self.app, "permissions", {})
+        perm_items: list[Any] = []
+        for key, label in self.PERMISSION_LABELS:
+            enabled_val = bool(perms.get(key, False))
+            status_tag = "On" if enabled_val else "Off"
+            perm_items.append(pystray.MenuItem(
+                f"{label} [{status_tag}]",
+                self._make_permission_toggle_action(key),
+                checked=lambda item, k=key: bool(getattr(self.app, "permissions", {}).get(k, False)),
+            ))
+        items.append(pystray.MenuItem("🛡️ Berechtigungen (Permissions)", pystray.Menu(*perm_items)))
+
+    def _make_permission_toggle_action(self, key: str) -> Callable[..., None]:
+        def action(*_):
+            perms = getattr(self.app, "permissions", {})
+            new_val = not bool(perms.get(key, False))
+            perms[key] = new_val
+            if hasattr(self.app.client, "update_permissions"):
+                self.app.client.update_permissions({key: new_val})
+            self.app.update_ui()
+        return action
 
     def _append_services(self, items: list[Any]) -> None:
         import pystray

@@ -59,3 +59,15 @@ def test_menu_signature_reacts_to_changes(mock_pystray):
 
     # Identical state produces identical signature
     assert app.menu_signature() == sig3
+
+
+def test_permissions_sub_flyout_and_talk_link(mock_pystray):
+    app = TrayApp(branding=TrayBranding.bach())
+    builder = MenuBuilder(app)
+    menu = builder.build_menu()
+    item_texts = [item.text for item in menu.items if hasattr(item, "text")]
+    assert any("Berechtigungen (Permissions)" in t for t in item_texts)
+    assert any("ELLMOS Talk" in t for t in item_texts)
+    sig_before = app.menu_signature()
+    app.permissions["camera"] = True
+    assert app.menu_signature() != sig_before
