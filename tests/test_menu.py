@@ -37,9 +37,10 @@ def test_build_menu_connected(mock_pystray):
 
     item_texts = [item.text for item in menu.items if hasattr(item, "text")]
     assert any("Modus: FULL | Denken: AN" in t for t in item_texts)
+    assert any("Deine Agenten (Modell-Bindung & Claim)" in t for t in item_texts)
     assert any("Buddha Chat" in t for t in item_texts)
     assert any("Hintergrundagenten" in t for t in item_texts)
-    assert any("Fackelpriorität:" in t for t in item_texts)
+    assert any("RAM-Distributor (Fackelpriorität:" in t for t in item_texts)
     assert any("BACH öffnen" in t for t in item_texts)
     assert any("Agenten · Running und Verlauf" in t for t in item_texts)
     assert not any("/activity" in t or "Aktivitätsanzeige" in t for t in item_texts)

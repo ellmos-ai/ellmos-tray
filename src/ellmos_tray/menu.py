@@ -136,7 +136,11 @@ class MenuBuilder:
         models = self.app.models
         backends = self.app.backends
 
-        # Chat Slot
+        items.append(pystray.MenuItem(
+            "🤖 Deine Agenten (Modell-Bindung & Claim)", None, enabled=False
+        ))
+
+        # Chat Agent (Klasse 1: Interaktiv)
         chat_slot = slots.get("buddha_chat", {})
         chat_label = branding.slot_labels.get("buddha_chat", "💬 Chat")
         chat_model = chat_slot.get("model") or self.app.state.get("model", "?")
@@ -145,7 +149,9 @@ class MenuBuilder:
         chat_mode = chat_slot.get("mode", "safe")
         chat_think = chat_slot.get("think", True)
 
-        chat_subitems: list[Any] = []
+        chat_subitems: list[Any] = [
+            pystray.MenuItem("Claim-Klasse: 1 · Interaktiv (Direkter Vorrang)", None, enabled=False),
+        ]
         if models:
             chat_model_items = [
                 pystray.MenuItem(
@@ -155,7 +161,7 @@ class MenuBuilder:
                 )
                 for m in models[:15]
             ]
-            chat_subitems.append(pystray.MenuItem(f"Modell: {chat_model}", pystray.Menu(*chat_model_items)))
+            chat_subitems.append(pystray.MenuItem(f"Modell-Bindung: {chat_model}", pystray.Menu(*chat_model_items)))
 
         chat_backend_items = [
             pystray.MenuItem(
@@ -195,9 +201,9 @@ class MenuBuilder:
             lambda *_: self._toggle_slot_think("buddha_chat"),
             checked=lambda item, ct=chat_think: ct,
         ))
-        items.append(pystray.MenuItem(f"{chat_label}: {chat_model}", pystray.Menu(*chat_subitems)))
+        items.append(pystray.MenuItem(f"{chat_label} [Klasse 1]: {chat_model}", pystray.Menu(*chat_subitems)))
 
-        # Always-On Slot
+        # Always-On Agent (Klasse 4: Hintergrund)
         always_slot = slots.get("buddha_always_on", {})
         always_label = branding.slot_labels.get("buddha_always_on", "⚡ Always-On")
         always_model = always_slot.get("model") or "qwen3.8:27b-mlx"
@@ -206,13 +212,15 @@ class MenuBuilder:
         always_mode = always_slot.get("mode", "full")
         always_enabled = always_slot.get("enabled") is True
         if always_slot.get("enabled") is False:
-            always_status_str = "Living · pausiert"
+            always_status_str = "pausiert"
         elif always_enabled:
-            always_status_str = "Living · aktiviert"
+            always_status_str = "aktiviert"
         else:
-            always_status_str = "Aktivierung nicht geprüft"
+            always_status_str = "nicht geprüft"
 
-        always_subitems: list[Any] = []
+        always_subitems: list[Any] = [
+            pystray.MenuItem("Claim-Klasse: 4 · Hintergrund (weicht Klasse 1–3)", None, enabled=False),
+        ]
         always_subitems.append(pystray.MenuItem(
             "Always-On aktivieren",
             lambda *_: self._toggle_slot_enabled("buddha_always_on"),
@@ -228,7 +236,7 @@ class MenuBuilder:
                 )
                 for m in models[:15]
             ]
-            always_subitems.append(pystray.MenuItem(f"Modell: {always_model}", pystray.Menu(*always_model_items)))
+            always_subitems.append(pystray.MenuItem(f"Modell-Bindung: {always_model}", pystray.Menu(*always_model_items)))
 
         always_backend_items = [
             pystray.MenuItem(
@@ -274,18 +282,20 @@ class MenuBuilder:
             None, enabled=False,
         ))
         items.append(pystray.MenuItem(
-            f"{always_label} [{always_status_str}]: {always_model}",
+            f"{always_label} [{always_status_str} · Klasse 4]: {always_model}",
             pystray.Menu(*always_subitems),
         ))
 
-        # Connector Slot
+        # Connector Agent (Klasse 2: Aktiver Nutzerauftrag)
         conn_slot = slots.get("buddha_connector", {})
         conn_label = branding.slot_labels.get("buddha_connector", "📱 Connector")
         conn_model = conn_slot.get("model") or "qwen3.8:27b-mlx"
         conn_backend = conn_slot.get("backend") or "ollama"
         conn_rounds = conn_slot.get("max_tool_rounds", 10)
 
-        conn_subitems: list[Any] = []
+        conn_subitems: list[Any] = [
+            pystray.MenuItem("Claim-Klasse: 2 · Aktiver Nutzerauftrag (Kanal)", None, enabled=False),
+        ]
         if models:
             conn_model_items = [
                 pystray.MenuItem(
@@ -295,7 +305,7 @@ class MenuBuilder:
                 )
                 for m in models[:15]
             ]
-            conn_subitems.append(pystray.MenuItem(f"Modell: {conn_model}", pystray.Menu(*conn_model_items)))
+            conn_subitems.append(pystray.MenuItem(f"Modell-Bindung: {conn_model}", pystray.Menu(*conn_model_items)))
 
         conn_backend_items = [
             pystray.MenuItem(
@@ -321,9 +331,9 @@ class MenuBuilder:
             f"{branding.messenger_label} öffnen",
             lambda *_: webbrowser.open(self.app.client.telegram_url),
         ))
-        items.append(pystray.MenuItem(f"{conn_label}: {conn_model}", pystray.Menu(*conn_subitems)))
+        items.append(pystray.MenuItem(f"{conn_label} [Klasse 2]: {conn_model}", pystray.Menu(*conn_subitems)))
 
-        # Talk / Funkgerät Slot
+        # Talk / Funkgerät Agent (Klasse 1: Interaktiv)
         talk_cfg = getattr(self.app, "talk_config", {})
         talk_mode = talk_cfg.get("operating_mode", "ptt")
         talk_persona = talk_cfg.get("persona", "buddha")
@@ -374,12 +384,13 @@ class MenuBuilder:
             )
         ]
         talk_subitems: list[Any] = [
+            pystray.MenuItem("Claim-Klasse: 1 · Interaktiv (Dual-Loop Fast-Reflex + Deep-Cortex)", None, enabled=False),
             pystray.MenuItem(
                 f"Betriebsart: {talk_mode_labels.get(talk_mode, talk_mode)}",
                 pystray.Menu(*talk_mode_items),
             ),
             pystray.MenuItem(
-                f"Persona / Modell-Slot: {talk_persona.capitalize()}",
+                f"Persona / Agenten-Bindung: {talk_persona.capitalize()}",
                 pystray.Menu(*talk_persona_items),
             ),
             pystray.MenuItem(
@@ -391,12 +402,12 @@ class MenuBuilder:
                 lambda *_: webbrowser.open(f"{self.app.client.gui_url}/talk?companion=1"),
             ),
             pystray.MenuItem(
-                "⚡ In Living & Running konfigurieren...",
+                "⚡ In Deine Agenten & Running konfigurieren...",
                 lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running#talk-slot"),
             ),
         ]
         items.append(pystray.MenuItem(
-            f"📻 Buddha Talk [{talk_mode_labels.get(talk_mode, talk_mode)}]: {talk_model}",
+            f"📻 Buddha Talk [{talk_mode_labels.get(talk_mode, talk_mode)} · Klasse 1]: {talk_model}",
             pystray.Menu(*talk_subitems),
         ))
 
@@ -465,24 +476,46 @@ class MenuBuilder:
 
         current_fackel = self.app.state.get("fackel_preference", "compute")
         fackel_label = (
-            "Fackelpriorität: Ollama" if current_fackel == "ollama"
-            else "Fackelpriorität: Rechenjobs"
+            "🔥 RAM-Distributor (Fackelpriorität: Ollama)"
+            if current_fackel == "ollama"
+            else "🔥 RAM-Distributor (Fackelpriorität: Rechenjobs)"
         )
+        turn_info = self.app.state.get("compute_turn")
+        if isinstance(turn_info, dict) and turn_info.get("active"):
+            holder_str = f"Aktiv: {turn_info.get('chat_id') or turn_info.get('holder') or 'Agent'} ({turn_info.get('priority', 'foreground')})"
+        else:
+            holder_str = "Frei (Bereit für Modell-Claim)"
+
         fackel_items = [
             pystray.MenuItem(
-                "Ollama / Chat & Worker bevorzugen",
+                f"Modell-Runtime (Turn-Halter): {holder_str}",
+                None,
+                enabled=False,
+            ),
+            pystray.MenuItem(
+                "Claim-Klassen: 1 Interaktiv → 2 Auftrag → 3 Termin → 4 Hintergrund",
+                None,
+                enabled=False,
+            ),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                "Tendenz: Lokale Agenten & Chat bevorzugen (Ollama)",
                 lambda *_: self._set_fackel("ollama"),
                 checked=lambda item: self.app.state.get("fackel_preference", "compute") == "ollama",
             ),
             pystray.MenuItem(
-                "Rechenjobs bevorzugen (Compute)",
+                "Tendenz: Rechenjobs & Pipelines bevorzugen (Compute)",
                 lambda *_: self._set_fackel("compute"),
                 checked=lambda item: self.app.state.get("fackel_preference", "compute") == "compute",
             ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                "🔓 Modell jetzt für andere Prozesse freigeben (Compute-Vorrang + Unload)",
+                "🔓 Modell & RAM jetzt für andere Prozesse freigeben (Compute-Vorrang + Unload)",
                 lambda *_: self._release_model_for_compute(),
+            ),
+            pystray.MenuItem(
+                "📖 Doku: Modell- & RAM-Claiming öffnen (/help)",
+                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/help?topic=claiming"),
             ),
         ]
         items.append(pystray.MenuItem(fackel_label, pystray.Menu(*fackel_items)))
