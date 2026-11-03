@@ -70,6 +70,7 @@ class TrayApp:
             "fackel_preference": "compute",
             "current_tool": "",
             "last_tools": [],
+            "ram_claiming": {"loaded_models": [], "loaded_count": 0, "claimed_gib": 0.0},
         }
         self.backends: dict[str, Any] = {}
         self.models: list[str] = []
@@ -191,6 +192,8 @@ class TrayApp:
         self.services["control"] = self.state["connected"]
         self.services["gui"] = self.client.check_url(self.client.gui_url + "/")
         self.services["ollama"] = self.client.check_url(self.client.ollama_url + "/api/tags")
+        if self.services["ollama"] and hasattr(self.client, "get_ram_claiming_status"):
+            self.state["ram_claiming"] = self.client.get_ram_claiming_status()
         perms_resp = self.client.get_permissions()
         if isinstance(perms_resp, dict) and isinstance(perms_resp.get("permissions"), dict):
             for k, v in perms_resp["permissions"].items():

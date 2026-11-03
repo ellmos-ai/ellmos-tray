@@ -349,6 +349,13 @@ def run_store_readiness_check(
         "timestamp": datetime.now(UTC).isoformat(),
         "project_root": str(root),
         "overall_status": "READY" if passed else "FAILED",
+        "claim_boundary": "source_and_metadata_preflight_only",
+        "external_gates_required": [
+            "msix_package_build",
+            "authenticode_certificate_signing",
+            "wack_binary_certification_run",
+            "partner_center_submission",
+        ],
         "passed": passed,
         "summary": {
             "total_checks": total_checks,

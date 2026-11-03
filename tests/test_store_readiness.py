@@ -20,6 +20,8 @@ def test_real_repo_store_readiness_passes():
     passed, report = run_store_readiness_check(REPO_ROOT)
     assert passed is True
     assert report["overall_status"] == "READY"
+    assert report["claim_boundary"] == "source_and_metadata_preflight_only"
+    assert "msix_package_build" in report["external_gates_required"]
     assert report["summary"]["failed"] == 0
     assert len(report["errors"]) == 0
     assert report["checks"]["msix_manifest"]["status"] == "PASS"

@@ -74,7 +74,7 @@ def test_gui_destinations_exclude_removed_activity_route():
     assert "/agenten/sessions" in paths
 
     resolved = dict(gui_destinations("http://127.0.0.1:8000/"))
-    assert resolved["Aufgaben"] == "http://127.0.0.1:8000/tasks"
+    assert resolved["📋 Aufgaben"] == "http://127.0.0.1:8000/tasks"
     assert normalize_gui_url("http://127.0.0.1:8000/") == "http://127.0.0.1:8000"
 
 

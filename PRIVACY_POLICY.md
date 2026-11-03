@@ -52,3 +52,12 @@ Die Software enthält keinerlei Telemetrie- oder Tracking-Komponenten. Es werden
 
 ### 4. Optionale Cloud-Brücken
 Falls Sie in Ihrer lokalen Backend-Konfiguration externe Cloud-Modelle (z. B. OpenAI oder Anthropic) aktivieren, erfolgt die Kommunikation mit diesen Anbietern ausschließlich über Ihre eigenen API-Schlüssel. Der Tray-Client speichert keine Zugangsdaten und liest keine geheimen Schlüssel aus.
+
+
+---
+
+## 5. Configurable Host, Credential & Redirect Boundary (#510 / #511)
+
+- **Default Loopback vs. Explicit `--host`:** By default, `ellmos-tray` connects exclusively to `127.0.0.1` (`localhost`). If a user explicitly supplies `--host` or `--gui-url` (for example, to monitor a personal home-server over LAN or Tailscale), requests are sent only to that user-specified endpoint.
+- **Control API Bearer Token & Redirect Protection:** When authenticating to the Control API (`BACH_CONTROL_API_TOKEN` / local credential file), the `Authorization` header is attached strictly to requests targeting `base_url`. Authenticated Control API requests disable HTTP redirect following (`_NoControlRedirect`), and cross-origin redirect responses are rejected fail-closed so credentials are never forwarded across origins.
+- **Scope of `--store-preflight`:** The built-in `tools/store_readiness.py` (`--store-preflight`) verifies source-tree manifest metadata, asset dimensions, and documentation disclosures (`claim_boundary: source_and_metadata_preflight_only`). Final MSIX binary packaging, Authenticode signing, WACK binary execution, and Microsoft Partner Center submission remain explicit release gates.

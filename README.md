@@ -114,3 +114,10 @@ python tools/store_readiness.py
 ## License
 
 MIT License. Copyright (c) 2026 Lukas Geiger.
+
+---
+
+## Security & Preflight Claim Boundaries
+
+- **Authenticated Control API Redirect Boundary (`#510`):** Authenticated Control API calls attach Bearer tokens strictly to `base_url`, disable HTTP redirect following (`_NoControlRedirect`), and reject cross-origin redirect targets fail-closed.
+- **Privacy & Store Preflight Boundary (`#511`):** Default connections use local loopback (`127.0.0.1`); remote hosts are only contacted when explicitly configured via `--host` / `--gui-url`. `tools/store_readiness.py` (`--store-preflight`) reports `claim_boundary: "source_and_metadata_preflight_only"` and enumerates external release gates (`msix_package_build`, `authenticode_certificate_signing`, `wack_binary_certification_run`, `partner_center_submission`).

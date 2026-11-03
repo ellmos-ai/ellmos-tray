@@ -9,8 +9,32 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from ellmos_tray.navigation import normalize_gui_url
+
+
+class _NoControlRedirect(urllib.request.HTTPRedirectHandler):
+    """Disallows HTTP redirects on authenticated Control API requests (#510).
+
+    Prevents Bearer token leakage across origins or redirect loops when talking
+    to the Control API.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        return None
+
+
+def _is_same_origin(url_a: str, url_b: str) -> bool:
+    """Returns True if two URLs share scheme, hostname, and effective port."""
+    pa, pb = urlsplit(url_a), urlsplit(url_b)
+    port_a = pa.port or (443 if pa.scheme == "https" else 80)
+    port_b = pb.port or (443 if pb.scheme == "https" else 80)
+    return (
+        pa.scheme.lower() == pb.scheme.lower()
+        and (pa.hostname or "").lower() == (pb.hostname or "").lower()
+        and port_a == port_b
+    )
 
 
 def _resolve_auth_header(explicit: str | None = None) -> str | None:
@@ -100,7 +124,22 @@ class ControlApiClient:
             headers=headers,
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            use_no_redirect = (
+                "Authorization" in headers
+                and getattr(urllib.request.urlopen, "__module__", "") == "urllib.request"
+            )
+            if use_no_redirect:
+                opener = urllib.request.build_opener(
+                    urllib.request.ProxyHandler({}),
+                    _NoControlRedirect(),
+                )
+                ctx = opener.open(req, timeout=timeout)
+            else:
+                ctx = urllib.request.urlopen(req, timeout=timeout)
+            with ctx as resp:
+                resp_url = getattr(resp, "geturl", lambda: url)()
+                if isinstance(resp_url, str) and resp_url and not _is_same_origin(url, resp_url):
+                    return None
                 content = resp.read()
                 if not content:
                     return {}
@@ -209,4 +248,27 @@ class ControlApiClient:
             "fackel": "compute",
             "always_on_paused": bool(slot_res and slot_res.get("ok")),
             "ollama_unloaded": unloaded,
+        }
+
+
+    def get_ram_claiming_status(self) -> dict[str, Any]:
+        """Queries Ollama /api/ps for currently loaded models and RAM/VRAM usage."""
+        ps_resp = self.api_request("GET", "/api/ps", base=self.ollama_url, timeout=3)
+        models = ps_resp.get("models", []) if isinstance(ps_resp, dict) else []
+        loaded_names: list[str] = []
+        total_bytes = 0
+        for m in models:
+            if not isinstance(m, dict):
+                continue
+            name = str(m.get("name") or m.get("model") or "").strip()
+            if name:
+                loaded_names.append(name)
+            size_val = m.get("size_vram") or m.get("size") or 0
+            if isinstance(size_val, (int, float)) and size_val > 0:
+                total_bytes += int(size_val)
+        gib = round(total_bytes / (1024 ** 3), 1) if total_bytes > 0 else 0.0
+        return {
+            "loaded_models": loaded_names,
+            "loaded_count": len(loaded_names),
+            "claimed_gib": gib,
         }

@@ -489,9 +489,22 @@ class MenuBuilder:
         else:
             holder_str = "Frei (Bereit für Modell-Claim)"
 
+        ram_claim = self.app.state.get("ram_claiming") or {}
+        loaded_models = ram_claim.get("loaded_models") or []
+        claimed_gib = ram_claim.get("claimed_gib") or 0.0
+        if loaded_models:
+            ram_line = f"RAM-Belegung: {len(loaded_models)} Modell(e) ({', '.join(loaded_models[:2])}) · {claimed_gib:.1f} GiB"
+        else:
+            ram_line = "RAM-Belegung: 0 Modelle im Speicher (0.0 GiB belegt)"
+
         fackel_items = [
             pystray.MenuItem(
                 f"Modell-Runtime (Turn-Halter): {holder_str}",
+                None,
+                enabled=False,
+            ),
+            pystray.MenuItem(
+                ram_line,
                 None,
                 enabled=False,
             ),
@@ -676,11 +689,10 @@ class MenuBuilder:
     def _release_model_for_compute(self) -> None:
         current_model = self.app.state.get("model")
         if hasattr(self.app.client, "release_model_for_compute"):
-            res = self.app.client.release_model_for_compute(current_model)
+            self.app.client.release_model_for_compute(current_model)
         else:
             self.app.client.set_fackel("compute")
             self.app.client.update_slot("buddha_always_on", {"enabled": False})
-            res = {"ok": True}
         self.app.state["fackel_preference"] = "compute"
         self.app.notify(
             "Modell für andere Prozesse freigegeben (Fackel=Compute, Always-On pausiert).",
