@@ -99,18 +99,21 @@ class MenuBuilder:
             lambda *_: webbrowser.open(self.app.client.gui_url),
             default=True,
         ))
-        items.append(pystray.MenuItem(
-            "🎙️ ELLMOS Talk (Live-Stimme)",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/talk"),
-        ))
-        for label, url in gui_destinations(self.app.client.gui_url):
-            items.append(pystray.MenuItem(
+        quick_link_items: list[Any] = [
+            pystray.MenuItem(
                 label,
                 lambda *_, target=url: webbrowser.open(target),
-            ))
-        items.append(pystray.MenuItem(
+            )
+            for label, url in gui_destinations(self.app.client.gui_url)
+        ]
+        quick_link_items.append(pystray.Menu.SEPARATOR)
+        quick_link_items.append(pystray.MenuItem(
             branding.messenger_label,
             lambda *_: webbrowser.open(self.app.client.telegram_url),
+        ))
+        items.append(pystray.MenuItem(
+            "🧭 Direktzugriff (Seiten & Kanäle)",
+            pystray.Menu(*quick_link_items),
         ))
 
         def _trigger_device_check(*_: Any) -> None:

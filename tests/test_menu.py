@@ -42,7 +42,7 @@ def test_build_menu_connected(mock_pystray):
     assert any("Hintergrundagenten" in t for t in item_texts)
     assert any("RAM-Distributor (Fackelpriorität:" in t for t in item_texts)
     assert any("BACH öffnen" in t for t in item_texts)
-    assert any("Agenten · Running und Verlauf" in t for t in item_texts)
+    assert any("Direktzugriff (Seiten & Kanäle)" in t for t in item_texts)
     assert not any("/activity" in t or "Aktivitätsanzeige" in t for t in item_texts)
 
 
@@ -68,7 +68,10 @@ def test_permissions_sub_flyout_and_talk_link(mock_pystray):
     menu = builder.build_menu()
     item_texts = [item.text for item in menu.items if hasattr(item, "text")]
     assert any("Berechtigungen (Permissions)" in t for t in item_texts)
-    assert any("ELLMOS Talk" in t for t in item_texts)
+    quick_menu = next(item.action for item in menu.items if hasattr(item, "text") and "Direktzugriff" in item.text)
+    quick_texts = [item.text for item in quick_menu.items if hasattr(item, "text")]
+    assert any("ELLMOS Talk" in t for t in quick_texts)
+    assert any("Agenten · Running und Verlauf" in t for t in quick_texts)
     sig_before = app.menu_signature()
     app.permissions["camera"] = True
     assert app.menu_signature() != sig_before

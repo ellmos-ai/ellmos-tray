@@ -4,14 +4,16 @@ from __future__ import annotations
 from urllib.parse import urlsplit
 
 GUI_DESTINATIONS = (
-    ("Chat", "/chat"),
-    ("Aufgaben", "/tasks"),
-    ("Agenten · Running und Verlauf", "/agenten/running"),
-    ("Werkstatt · Vorlagen", "/agenten/blueprints"),
-    ("Posteingang", "/inbox"),
-    ("Routinen", "/routinen"),
-    ("Einstellungen", "/settings"),
-    ("Sitzungen", "/agenten/sessions"),
+    ("💬 Chat", "/chat"),
+    ("🎙️ ELLMOS Talk (Live-Stimme)", "/talk"),
+    ("📋 Aufgaben", "/tasks"),
+    ("⚡ Agenten · Running und Verlauf", "/agenten/running"),
+    ("📚 Agenten-Bibliothek · Vorlagen", "/agenten/blueprints"),
+    ("📥 Posteingang", "/inbox"),
+    ("🔁 Routinen", "/routinen"),
+    ("⚙️ Einstellungen", "/settings"),
+    ("🗂️ Sitzungen", "/agenten/sessions"),
+    ("📖 Hilfe & Claim-Doku", "/help?topic=claiming"),
 )
 
 
