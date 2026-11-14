@@ -1,0 +1,50 @@
+{
+  "schema": "ellmos.module.v2",
+  "id": "ellmos-tray",
+  "display_name": "ellmos-tray",
+  "version": "0.1.2",
+  "category": "runtime",
+  "kind": "ui",
+  "status": "active",
+  "visibility": "public",
+  "description": "Pluggable, modular system tray and quick control client for ELLMOS and BACH desktop environments.",
+  "package": "ellmos-tray",
+  "entrypoints": {
+    "cli": "ellmos-tray = ellmos_tray.__main__:main"
+  },
+  "provides": [
+    "system-tray",
+    "quick-chat-launcher",
+    "prompt-board-client"
+  ],
+  "requires": [],
+  "optional": [
+    "chat.runtime",
+    "control-api"
+  ],
+  "conflicts": [],
+  "surfaces": [
+    "ui",
+    "cli",
+    "library"
+  ],
+  "state": {
+    "ownership": "external",
+    "location": "user-home"
+  },
+  "boundaries": {
+    "network": "optional",
+    "data": "user-local",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ]
+  },
+  "source_of_truth": {
+    "type": "git-repository",
+    "path": ".",
+    "repository": "https://github.com/ellmos-ai/ellmos-tray"
+  },
+  "adapters": []
+}

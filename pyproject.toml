@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Desktop Environment",
     "Topic :: System :: Hardware",
+    "Typing :: Typed",
 ]
 
 dependencies = [
@@ -44,6 +45,9 @@ ellmos-tray = "ellmos_tray.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+ellmos_tray = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

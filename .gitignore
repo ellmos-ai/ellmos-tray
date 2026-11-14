@@ -1,6 +1,9 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
+*.pyd
 *$py.class
 *.so
 .Python
@@ -22,6 +25,9 @@ wheels/
 
 # Virtual environments
 .env
+.env.*
+.env.local
+.venv/
 .venv
 env/
 venv/
@@ -47,3 +53,20 @@ Thumbs.db
 # Locks & Logs
 *.lock
 *.log
+LOCK*.txt
+
+# Databases, Runtime Data & Secrets
+*.db
+*.sqlite
+*.sqlite3
+data/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cert
+.npmrc
+.pypirc
+credentials.json
+secrets.json
