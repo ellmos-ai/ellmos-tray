@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="ellmos-tray banner" width="100%">
+</p>
+
 # ellmos-tray
 
 **Pluggbarer System-Tray und Desktop-Steuerungs-Client für ELLMOS, BACH und OCEAN**
