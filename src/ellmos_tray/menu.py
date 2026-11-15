@@ -8,7 +8,7 @@ import webbrowser
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from ellmos_tray.navigation import gui_destinations
+from ellmos_tray.navigation import gui_destinations, is_safe_http_url
 from ellmos_tray.runner import LegacyBachIdleRunner
 
 if TYPE_CHECKING:
@@ -22,6 +22,13 @@ class MenuBuilder:
 
     def __init__(self, app: TrayApp):
         self.app = app
+
+    @staticmethod
+    def _open_browser_url(url: str) -> bool:
+        """Opens url in the default browser only if it uses an explicit http/https scheme."""
+        if not is_safe_http_url(url):
+            return False
+        return bool(webbrowser.open(url.strip()))
 
     def build_menu(self) -> pystray.Menu:
         import pystray
@@ -96,20 +103,20 @@ class MenuBuilder:
         # ── 5. Quick links & Tools ──
         items.append(pystray.MenuItem(
             branding.gui_label,
-            lambda *_: webbrowser.open(self.app.client.gui_url),
+            lambda *_: self._open_browser_url(self.app.client.gui_url),
             default=True,
         ))
         quick_link_items: list[Any] = [
             pystray.MenuItem(
                 label,
-                lambda *_, target=url: webbrowser.open(target),
+                lambda *_, target=url: self._open_browser_url(target),
             )
             for label, url in gui_destinations(self.app.client.gui_url)
         ]
         quick_link_items.append(pystray.Menu.SEPARATOR)
         quick_link_items.append(pystray.MenuItem(
             branding.messenger_label,
-            lambda *_: webbrowser.open(self.app.client.telegram_url),
+            lambda *_: self._open_browser_url(self.app.client.telegram_url),
         ))
         items.append(pystray.MenuItem(
             "🧭 Direktzugriff (Seiten & Kanäle)",
@@ -332,7 +339,7 @@ class MenuBuilder:
         conn_subitems.append(pystray.MenuItem(f"Max Turns: {conn_rounds}", pystray.Menu(*conn_round_items)))
         conn_subitems.append(pystray.MenuItem(
             f"{branding.messenger_label} öffnen",
-            lambda *_: webbrowser.open(self.app.client.telegram_url),
+            lambda *_: self._open_browser_url(self.app.client.telegram_url),
         ))
         items.append(pystray.MenuItem(f"{conn_label} [Klasse 2]: {conn_model}", pystray.Menu(*conn_subitems)))
 
@@ -402,11 +409,11 @@ class MenuBuilder:
             ),
             pystray.MenuItem(
                 "🎙️ Begleitfenster öffnen (Companion)",
-                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/talk?companion=1"),
+                lambda *_: self._open_browser_url(f"{self.app.client.gui_url}/talk?companion=1"),
             ),
             pystray.MenuItem(
                 "⚡ In Deine Agenten & Running konfigurieren...",
-                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running#talk-slot"),
+                lambda *_: self._open_browser_url(f"{self.app.client.gui_url}/agenten/running#talk-slot"),
             ),
         ]
         items.append(pystray.MenuItem(
@@ -467,7 +474,7 @@ class MenuBuilder:
             workers_subitems.append(pystray.Menu.SEPARATOR)
         workers_subitems.append(pystray.MenuItem(
             "Agenten verwalten…",
-            lambda *_: webbrowser.open(f"{self.app.client.gui_url}/agenten/running"),
+            lambda *_: self._open_browser_url(f"{self.app.client.gui_url}/agenten/running"),
         ))
         items.append(pystray.MenuItem(
             f"🛠 Hintergrundagenten ({len(self.app.dynamic_workers)})",
@@ -531,7 +538,7 @@ class MenuBuilder:
             ),
             pystray.MenuItem(
                 "📖 Doku: Modell- & RAM-Claiming öffnen (/help)",
-                lambda *_: webbrowser.open(f"{self.app.client.gui_url}/help?topic=claiming"),
+                lambda *_: self._open_browser_url(f"{self.app.client.gui_url}/help?topic=claiming"),
             ),
         ]
         items.append(pystray.MenuItem(fackel_label, pystray.Menu(*fackel_items)))

@@ -17,7 +17,7 @@
    - Clean separation between UI state observation and background task execution.
    - **Start/Attach Detection:** Automatically detects whether backend is already running (`ATTACHED`) or launched by tray (`SPAWNED`).
    - **Clear Process Ownership:** Graceful termination on shutdown only for managed child processes; pre-existing backends are left untouched.
-   - Optional pluggable execution runners (`TaskExecutionDelegate`, `LegacyBachIdleRunner`) for full backward compatibility without hardcoded paths.
+   - Optional pluggable execution runners (`TaskExecutionDelegate`, `LegacyBachIdleRunner`) for full backward compatibility without hardcoded user paths.
 
 3. **Resilience & Recovery (v0.1.2)**
    - **Auto-Reconnect:** State machine (`CONNECTED`, `DISCONNECTED`, `RECONNECTING`) with exponential backoff and connection restored notifications.
@@ -43,7 +43,7 @@
 pip install -e .
 ```
 
-Dependencies: `pystray>=0.19.5`, `Pillow>=10.0.0`.
+Dependencies: `pystray>=0.19.5`, `Pillow>=10.0.0` (see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for Level-1 SBOM and LGPLv3 runtime import notes).
 
 ---
 
@@ -115,9 +115,11 @@ python tools/store_readiness.py
 
 MIT License. Copyright (c) 2026 Lukas Geiger.
 
+Third-party dependency licenses and Level-1 SBOM are documented in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
 ---
 
 ## Security & Preflight Claim Boundaries
 
-- **Authenticated Control API Redirect Boundary (`#510`):** Authenticated Control API calls attach Bearer tokens strictly to `base_url`, disable HTTP redirect following (`_NoControlRedirect`), and reject cross-origin redirect targets fail-closed.
-- **Privacy & Store Preflight Boundary (`#511`):** Default connections use local loopback (`127.0.0.1`); remote hosts are only contacted when explicitly configured via `--host` / `--gui-url`. `tools/store_readiness.py` (`--store-preflight`) reports `claim_boundary: "source_and_metadata_preflight_only"` and enumerates external release gates (`msix_package_build`, `authenticode_certificate_signing`, `wack_binary_certification_run`, `partner_center_submission`).
+- **Authenticated Control API Redirect, Header & Size Boundary (`#510`):** Authenticated Control API calls attach Bearer tokens strictly to `base_url`, reject `CR`/`LF`/`NUL` header characters (`CWE-113`), cap response payloads to `4 MiB` (`CWE-400`), disable HTTP redirect following (`_NoControlRedirect`), and reject cross-origin redirect targets fail-closed. Browser quick links enforce explicit `http`/`https` schemes (`is_safe_http_url`) before calling `webbrowser.open`.
+- **Privacy, Store Preflight & LGPLv3 Boundary (`#511`):** Default connections use local loopback (`127.0.0.1`); remote hosts are only contacted when explicitly configured via `--host` / `--gui-url`. `tools/store_readiness.py` (`--store-preflight`) reports `claim_boundary: "source_and_metadata_preflight_only"` and enumerates external release gates (`msix_package_build`, `authenticode_certificate_signing`, `wack_binary_certification_run`, `partner_center_submission`). See [SECURITY.md](SECURITY.md) (`48h` ack / `5` business days triage / `30` calendar days remediation SLA) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

@@ -23,41 +23,55 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual environments & env files
 .env
 .env.*
 .env.local
+*.env
 .venv/
 .venv
 env/
 venv/
 ENV/
 
-# Testing & Linting
+# Testing, Linting & Agent Caches
 .pytest_cache/
+.pytest_temp/
+pytest_result.txt
 .ruff_cache/
 .coverage
 htmlcov/
 .mypy_cache/
+.gemini/
+.antigravity/
+.claude/
 
-# IDE
+# IDE & Patch Artifacts
 .idea/
 .vscode/
 *.swp
 *.swo
+*.orig
+*.rej
 
-# OS
+# OS & Multi-Host Sync Artifacts
 .DS_Store
 Thumbs.db
+*-WORKSTATION-LG.*
+*-ASUS-GEI.*
+*-IDEAPAD-GEI*
+CONFLICT_REVIEW_LOG*
 
 # Locks & Logs
 *.lock
 *.log
 LOCK*.txt
+LOCK-CACHE*
 
-# Databases, Runtime Data & Secrets
+# Databases, Runtime Data, Keys, Certificates & Secrets
 *.db
 *.sqlite
+*.sqlite*
 *.sqlite3
 data/
 *.key
@@ -65,8 +79,21 @@ data/
 *.p12
 *.pfx
 *.crt
+*.cer
 *.cert
+*.csr
+*.token
+*.secret
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
 .npmrc
 .pypirc
 credentials.json
 secrets.json
+token.json
+tokens.json
+*secret*.json
+*token*.json
+*recovery*code*.txt

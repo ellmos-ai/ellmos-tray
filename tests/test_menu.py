@@ -1,6 +1,8 @@
 """
-Unit tests for MenuBuilder and menu signature generation.
+Unit tests for MenuBuilder, menu signature generation, and browser URL scheme guard.
 """
+from unittest.mock import patch
+
 from ellmos_tray.app import TrayApp
 from ellmos_tray.branding import TrayBranding
 from ellmos_tray.menu import MenuBuilder
@@ -75,3 +77,14 @@ def test_permissions_sub_flyout_and_talk_link(mock_pystray):
     sig_before = app.menu_signature()
     app.permissions["camera"] = True
     assert app.menu_signature() != sig_before
+
+
+def test_open_browser_url_blocks_non_http_schemes():
+    with patch("webbrowser.open", return_value=True) as mock_open:
+        assert MenuBuilder._open_browser_url("file:///C:/Windows/System32/calc.exe") is False
+        assert MenuBuilder._open_browser_url("javascript:alert(1)") is False
+        assert MenuBuilder._open_browser_url("\\\\evil.example\\share\\payload.exe") is False
+        mock_open.assert_not_called()
+
+        assert MenuBuilder._open_browser_url("https://t.me/bach_assistant_bot") is True
+        mock_open.assert_called_once_with("https://t.me/bach_assistant_bot")

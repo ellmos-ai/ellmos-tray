@@ -9,9 +9,11 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
-from ellmos_tray.navigation import normalize_gui_url
+from ellmos_tray.navigation import is_safe_http_url, normalize_gui_url
+
+MAX_API_RESPONSE_BYTES = 4 * 1024 * 1024  # 4 MiB ceiling against unbounded HTTP responses (CWE-400)
 
 
 class _NoControlRedirect(urllib.request.HTTPRedirectHandler):
@@ -37,36 +39,55 @@ def _is_same_origin(url_a: str, url_b: str) -> bool:
     )
 
 
+def _sanitize_header_value(value: str | None) -> str | None:
+    """Rejects header values containing CR/LF/NUL to prevent HTTP header injection (CWE-113)."""
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned or any(ch in cleaned for ch in ("\r", "\n", "\x00")):
+        return None
+    return cleaned
+
+
+def _read_token_file(path: Path) -> str | None:
+    """Reads the first non-empty, non-comment token line from a local credential file."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    for line in text.splitlines():
+        candidate = line.strip()
+        if not candidate or candidate.startswith("#"):
+            continue
+        return _sanitize_header_value(f"Bearer {candidate}")
+    return None
+
+
 def _resolve_auth_header(explicit: str | None = None) -> str | None:
     """Resolves the Bearer authentication header from explicit arg, env, or credentials file."""
     if explicit:
-        return explicit
+        return _sanitize_header_value(explicit)
     hdr = os.environ.get("CONTROL_API_AUTH_HEADER")
     if hdr:
-        return hdr
+        return _sanitize_header_value(hdr)
     tok = os.environ.get("BACH_CONTROL_API_TOKEN")
     if tok:
-        return f"Bearer {tok.strip()}"
+        clean_tok = _sanitize_header_value(tok)
+        return f"Bearer {clean_tok}" if clean_tok else None
     tok_file = os.environ.get("BACH_CONTROL_API_TOKEN_FILE")
     if tok_file:
-        try:
-            val = Path(tok_file).read_text(encoding="utf-8").strip()
-            if val:
-                return f"Bearer {val}"
-        except Exception:
-            pass
+        resolved = _read_token_file(Path(tok_file))
+        if resolved:
+            return resolved
     for p in (
         Path.home() / ".credentials" / "bach_control_api_token",
         Path.home() / ".credentials" / "control_api_token",
         Path("C:/_Local_DEV/CREDENTIALS/bach/control_api_token.txt"),
     ):
         if p.exists():
-            try:
-                val = p.read_text(encoding="utf-8").strip()
-                if val:
-                    return f"Bearer {val}"
-            except Exception:
-                pass
+            resolved = _read_token_file(p)
+            if resolved:
+                return resolved
     return None
 
 
@@ -90,7 +111,10 @@ class ControlApiClient:
             or os.environ.get("BACH_GUI_URL") or f"http://{host}:8000"
         )
         self.ollama_url = ollama_url or f"http://{host}:11434"
-        self.telegram_url = telegram_url
+        clean_telegram = telegram_url.strip()
+        if not is_safe_http_url(clean_telegram):
+            raise ValueError("Messenger-Adresse muss eine vollständige HTTP(S)-Adresse sein.")
+        self.telegram_url = clean_telegram
         self._auth_header = _resolve_auth_header(auth_header)
 
     @property
@@ -99,7 +123,7 @@ class ControlApiClient:
 
     @auth_header.setter
     def auth_header(self, value: str | None) -> None:
-        self._auth_header = value
+        self._auth_header = _sanitize_header_value(value)
 
     def api_request(
         self,
@@ -140,11 +164,13 @@ class ControlApiClient:
                 resp_url = getattr(resp, "geturl", lambda: url)()
                 if isinstance(resp_url, str) and resp_url and not _is_same_origin(url, resp_url):
                     return None
-                content = resp.read()
+                content = resp.read(MAX_API_RESPONSE_BYTES + 1)
                 if not content:
                     return {}
+                if len(content) > MAX_API_RESPONSE_BYTES:
+                    return None
                 return json.loads(content.decode("utf-8"))
-        except (urllib.error.URLError, OSError, json.JSONDecodeError):
+        except (urllib.error.URLError, OSError, UnicodeDecodeError, json.JSONDecodeError):
             return None
 
     def check_url(self, url: str, timeout: int = 2) -> bool:
@@ -214,8 +240,8 @@ class ControlApiClient:
         return self.api_request("POST", "/api/chat", payload, timeout=timeout)
 
     def get_history(self, chat_id: str) -> dict[str, Any] | None:
-        return self.api_request("GET", f"/api/history?chat_id={chat_id}")
-
+        safe_chat_id = quote(str(chat_id), safe="")
+        return self.api_request("GET", f"/api/history?chat_id={safe_chat_id}")
 
     def get_permissions(self) -> dict[str, Any] | None:
         return self.api_request("GET", "/api/permissions", base=self.gui_url)
@@ -249,7 +275,6 @@ class ControlApiClient:
             "always_on_paused": bool(slot_res and slot_res.get("ok")),
             "ollama_unloaded": unloaded,
         }
-
 
     def get_ram_claiming_status(self) -> dict[str, Any]:
         """Queries Ollama /api/ps for currently loaded models and RAM/VRAM usage."""

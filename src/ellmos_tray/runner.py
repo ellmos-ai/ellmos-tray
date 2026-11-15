@@ -6,12 +6,14 @@ Allows decoupling the desktop UI from the background task execution engine
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 if TYPE_CHECKING:
     from ellmos_tray.app import TrayApp
@@ -94,7 +96,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
         if env_repo and Path(env_repo).is_dir():
             return Path(env_repo)
         if sys.platform == "darwin":
-            mac_path = Path("/Users/lukas/services/bach")
+            mac_path = Path.home() / "services" / "bach"
             if mac_path.is_dir():
                 return mac_path
         local_dev = Path(r"C:\_Local_DEV\repos\bach")
@@ -201,8 +203,9 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             ),
         }
 
-        display, desc = PERSONA_MAP.get(clean, (clean.capitalize(), f"Experten-Rolle '{clean}'."))
-        return (clean, display, desc)
+        safe_id = re.sub(r"[^a-z0-9_-]", "", clean) or "bach"
+        display, desc = PERSONA_MAP.get(clean, (safe_id.capitalize(), f"Experten-Rolle '{safe_id}'."))
+        return (safe_id, display, desc)
 
     def _auto_commit_task(self, task_id: int, title: str) -> None:
         try:
@@ -219,7 +222,9 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             valid_files = [
                 f
                 for f in mod_files
-                if not f.startswith("system/data/")
+                if "\x00" not in f
+                and ".." not in Path(f).parts
+                and not f.startswith("system/data/")
                 and not f.endswith(".wal")
                 and not f.endswith(".lock")
             ]
@@ -234,7 +239,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 return
 
             subprocess.run(
-                ["git", "add"] + valid_files,
+                ["git", "add", "--", *valid_files],
                 cwd=str(self.repo_dir),
                 capture_output=True,
                 text=True,
@@ -242,7 +247,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 check=True,
             )
 
-            clean_title = title.replace('"', "").replace("'", "").strip()[:80]
+            clean_title = " ".join(title.replace('"', "").replace("'", "").splitlines()).strip()[:80]
             commit_msg = f"bach(buddha): #{task_id} {clean_title}"
             subprocess.run(
                 ["git", "commit", "-m", commit_msg],
@@ -263,7 +268,8 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
         else:
             task_id, seit = self.pending_task[0], self.pending_task[1]
             title = f"Task #{task_id}"
-        task_chat_id = f"idle-task-{task_id}"
+        safe_tid = quote(str(task_id), safe="")
+        task_chat_id = f"idle-task-{safe_tid}"
         hist = app.client.get_history(task_chat_id)
         messages = (hist or {}).get("messages", [])
         answer = next((m for m in messages if m.get("role") == "assistant"), None)
@@ -272,7 +278,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             if not messages or (time.time() - seit >= self.PENDING_TTL):
                 app.client.api_request(
                     "PUT",
-                    f"/api/tasks/{task_id}",
+                    f"/api/tasks/{safe_tid}",
                     {"status": "open", "changed_by": "idle-worker"},
                     base=app.client.gui_url,
                 )
@@ -289,7 +295,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             or ("nicht im Code lösen" in ans_text and not hat_folgetask)
         )
 
-        task_now = app.client.api_request("GET", f"/api/tasks/{task_id}", base=app.client.gui_url)
+        task_now = app.client.api_request("GET", f"/api/tasks/{safe_tid}", base=app.client.gui_url)
         if task_now and task_now.get("completed_at"):
             self.pending_task = None
             return True
@@ -301,7 +307,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             status = "open"
         app.client.api_request(
             "PUT",
-            f"/api/tasks/{task_id}",
+            f"/api/tasks/{safe_tid}",
             {"status": status, "changed_by": "idle-worker"},
             base=app.client.gui_url,
         )
@@ -325,7 +331,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 for status in ("pending", "open"):
                     tasks_resp = app.client.api_request(
                         "GET",
-                        f"/api/tasks?assigned_to={assignee}&status={status}",
+                        f"/api/tasks?assigned_to={quote(assignee, safe='')}&status={quote(status, safe='')}",
                         base=app.client.gui_url,
                     )
                     if tasks_resp and tasks_resp.get("success") and tasks_resp.get("tasks"):
@@ -339,7 +345,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 for status in ("pending", "open"):
                     tasks_resp = app.client.api_request(
                         "GET",
-                        f"/api/tasks?status={status}",
+                        f"/api/tasks?status={quote(status, safe='')}",
                         base=app.client.gui_url,
                     )
                     if tasks_resp and tasks_resp.get("success") and tasks_resp.get("tasks"):
@@ -357,27 +363,28 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 return
 
             if task.get("completed_at"):
-                tid = task.get("id")
+                safe_done_tid = quote(str(task.get("id")), safe="")
                 app.client.api_request(
                     "PUT",
-                    f"/api/tasks/{tid}",
+                    f"/api/tasks/{safe_done_tid}",
                     {"status": "done", "changed_by": "idle-worker"},
                     base=app.client.gui_url,
                 )
                 return
 
             task_id = task.get("id")
+            safe_tid = quote(str(task_id), safe="")
             title = task.get("title", "Unbenannt")
             desc = task.get("description", "")
             assignee = task.get("assigned_to", "bach")
             self.current_task_name = title
 
             role_id, role_display, role_desc = self._resolve_role(assignee)
-            task_chat_id = f"idle-{role_id}-{task_id}"
+            task_chat_id = f"idle-{role_id}-{safe_tid}"
 
             claim_resp = app.client.api_request(
                 "PUT",
-                f"/api/tasks/{task_id}",
+                f"/api/tasks/{safe_tid}",
                 {"status": "in_progress", "changed_by": "idle-worker"},
                 base=app.client.gui_url,
             )
@@ -403,7 +410,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
             elif result.get("compute_locked"):
                 app.client.api_request(
                     "PUT",
-                    f"/api/tasks/{task_id}",
+                    f"/api/tasks/{safe_tid}",
                     {"status": task_status, "changed_by": "idle-worker"},
                     base=app.client.gui_url,
                 )
@@ -419,7 +426,7 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 if ist_fertig or not ist_unvollstaendig:
                     app.client.api_request(
                         "PUT",
-                        f"/api/tasks/{task_id}",
+                        f"/api/tasks/{safe_tid}",
                         {"status": "completed", "changed_by": "idle-worker"},
                         base=app.client.gui_url,
                     )
@@ -428,14 +435,14 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
                 else:
                     app.client.api_request(
                         "PUT",
-                        f"/api/tasks/{task_id}",
+                        f"/api/tasks/{safe_tid}",
                         {"status": "open", "changed_by": "idle-worker"},
                         base=app.client.gui_url,
                     )
             else:
                 app.client.api_request(
                     "PUT",
-                    f"/api/tasks/{task_id}",
+                    f"/api/tasks/{safe_tid}",
                     {"status": "open", "changed_by": "idle-worker"},
                     base=app.client.gui_url,
                 )

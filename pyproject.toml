@@ -8,7 +8,7 @@ version = "0.1.2"
 description = "Pluggable, modular system tray and quick control client for ELLMOS and BACH desktop environments"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "THIRD_PARTY_LICENSES.md"]
 requires-python = ">=3.11"
 authors = [
     { name = "Lukas Geiger" }
@@ -39,6 +39,15 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.11",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ellmos-ai/ellmos-tray"
+Repository = "https://github.com/ellmos-ai/ellmos-tray.git"
+Issues = "https://github.com/ellmos-ai/ellmos-tray/issues"
+Changelog = "https://github.com/ellmos-ai/ellmos-tray/blob/master/CHANGELOG.md"
+Security = "https://github.com/ellmos-ai/ellmos-tray/blob/master/SECURITY.md"
+"Privacy Policy" = "https://github.com/ellmos-ai/ellmos-tray/blob/master/PRIVACY_POLICY.md"
+"Third-Party Licenses" = "https://github.com/ellmos-ai/ellmos-tray/blob/master/THIRD_PARTY_LICENSES.md"
 
 [project.scripts]
 ellmos-tray = "ellmos_tray.__main__:main"

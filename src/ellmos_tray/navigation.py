@@ -17,8 +17,25 @@ GUI_DESTINATIONS = (
 )
 
 
+def _has_control_chars(value: str) -> bool:
+    return any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value)
+
+
+def is_safe_http_url(value: str) -> bool:
+    """Return True only for well-formed http/https URLs without ASCII control characters."""
+    if not isinstance(value, str) or _has_control_chars(value):
+        return False
+    clean = value.strip()
+    if not clean:
+        return False
+    parts = urlsplit(clean)
+    return parts.scheme.lower() in {"http", "https"} and bool(parts.hostname)
+
+
 def normalize_gui_url(value: str) -> str:
     """Keep the configured GUI host and base path without trailing slashes."""
+    if _has_control_chars(value):
+        raise ValueError("GUI-Adresse darf keine Steuerzeichen enthalten.")
     value = value.strip().rstrip("/")
     parts = urlsplit(value)
     if parts.scheme not in {"http", "https"} or not parts.hostname:
