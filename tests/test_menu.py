@@ -81,7 +81,7 @@ def test_permissions_sub_flyout_and_talk_link(mock_pystray):
 
 def test_open_browser_url_blocks_non_http_schemes():
     with patch("webbrowser.open", return_value=True) as mock_open:
-        assert MenuBuilder._open_browser_url("file:///C:/Windows/System32/calc.exe") is False
+        assert MenuBuilder._open_browser_url("file://localhost/System32/calc.exe") is False
         assert MenuBuilder._open_browser_url("javascript:alert(1)") is False
         assert MenuBuilder._open_browser_url("\\\\evil.example\\share\\payload.exe") is False
         mock_open.assert_not_called()

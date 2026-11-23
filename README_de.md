@@ -4,6 +4,14 @@
 
 # ellmos-tray
 
+[![Version](https://img.shields.io/badge/Version-0.1.2-blue.svg)](pyproject.toml)
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](pyproject.toml)
+[![Lizenz](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-79%20bestanden-brightgreen.svg)](tests/)
+[![Geprüft](https://img.shields.io/badge/Gepr%C3%BCft-2026--11--23-teal.svg)](CHANGELOG.md)
+
+**Sprache / Language:** [English](README.md) | **Deutsch** · **LLM / Agent:** [llms.txt](llms.txt) · [SKILL.md](SKILL.md)
+
 **Pluggbarer System-Tray und Desktop-Steuerungs-Client für ELLMOS, BACH und OCEAN**
 
 `ellmos-tray` bietet eine plattformübergreifende (Windows, macOS, Linux) System-Tray-Anwendung und Schnellsteuerungs-Schnittstelle für lokale KI-Umgebungen. Es überführt die bewährten Desktop-Tray-Funktionen aus BACH OS in ein sauberes, eigenständiges und entkoppeltes Modul.
@@ -115,11 +123,14 @@ python tools/store_readiness.py
 
 ---
 
-## Lizenz
+## Lizenz & Richtlinien
 
 MIT License. Copyright (c) 2026 Lukas Geiger.
 
-Drittanbieter-Lizenzen und Level-1-SBOM sind in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) dokumentiert.
+- **Drittanbieter-Lizenzen & SBOM:** [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
+- **Mitwirken:** [CONTRIBUTING.md](CONTRIBUTING.md) · **Verhaltenskodex:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **Sicherheit & Datenschutz:** [SECURITY.md](SECURITY.md) · [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+- **Agenten- / LLM-Einstiege:** [SKILL.md](SKILL.md) · [llms.txt](llms.txt)
 
 ---
 

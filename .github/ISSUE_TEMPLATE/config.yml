@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability (Private Advisory)
+    url: https://github.com/ellmos-ai/ellmos-tray/security/advisories/new
+    about: Please report security issues privately rather than opening a public issue.
+  - name: Documentation & LLM Entrypoint
+    url: https://github.com/ellmos-ai/ellmos-tray/blob/master/llms.txt
+    about: Quick overview of CLI commands, Python API, and architecture.

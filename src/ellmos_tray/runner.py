@@ -95,13 +95,14 @@ class LegacyBachIdleRunner(TaskExecutionDelegate):
         env_repo = os.environ.get("BACH_REPO_DIR")
         if env_repo and Path(env_repo).is_dir():
             return Path(env_repo)
-        if sys.platform == "darwin":
-            mac_path = Path.home() / "services" / "bach"
-            if mac_path.is_dir():
-                return mac_path
-        local_dev = Path(r"C:\_Local_DEV\repos\bach")
-        if local_dev.is_dir():
-            return local_dev
+        env_local_dev = os.environ.get("ELLMOS_LOCAL_DEV_DIR")
+        if env_local_dev:
+            candidate = Path(env_local_dev) / "repos" / "bach"
+            if candidate.is_dir():
+                return candidate
+        home_repo = Path.home() / "services" / "bach"
+        if home_repo.is_dir():
+            return home_repo
         return Path.cwd()
 
     @property

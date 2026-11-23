@@ -79,11 +79,15 @@ def _resolve_auth_header(explicit: str | None = None) -> str | None:
         resolved = _read_token_file(Path(tok_file))
         if resolved:
             return resolved
-    for p in (
+    candidates = [
         Path.home() / ".credentials" / "bach_control_api_token",
         Path.home() / ".credentials" / "control_api_token",
-        Path("C:/_Local_DEV/CREDENTIALS/bach/control_api_token.txt"),
-    ):
+        Path.home() / ".config" / "ellmos" / "control_api_token.txt",
+    ]
+    cred_dir = os.environ.get("ELLMOS_CREDENTIALS_DIR")
+    if cred_dir:
+        candidates.append(Path(cred_dir) / "bach" / "control_api_token.txt")
+    for p in candidates:
         if p.exists():
             resolved = _read_token_file(p)
             if resolved:
