@@ -15,14 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded `SECURITY.md` to bilingual (EN/DE) policy with GitHub Private Vulnerability Reporting and binding response SLAs (`INV-SLA-09` & `INV-SLA-10`: `48h` acknowledgement, `5` business days triage, `30` calendar days remediation).
 
 ### Added
+- Bilingual `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` (EN/DE), P-022 LLM entrypoints (`SKILL.md`, `llms.txt`, `llm.txt`), `MANIFEST.in`, and bilingual `.github/ISSUE_TEMPLATE/` templates (`config.yml`, `bug_report.md`, `feature_request.md`).
+- Expanded contract tests in `tests/test_metadata.py` covering PEP 621/639 metadata, pytest options (`--strict-markers`, `xfail_strict`, `asyncio_default_fixture_loop_scope`, `.pytest_temp` in `norecursedirs` without relative `--basetemp`), CI matrix parity, governance/P-022 files, and portable environment resolution.
 - `THIRD_PARTY_LICENSES.md` (Level-1 SBOM) documenting `pystray` (`LGPL-3.0-or-later` dynamic runtime import & MSIX freeze boundary), `Pillow` (`MIT-CMU`), transitive packages, dev dependencies, and governance invariants; registered under PEP 639 `license-files` and `[project.urls]` in `pyproject.toml`.
 - `.github/dependabot.yml` for weekly `pip` and `github-actions` supply-chain security updates.
 - `.github/workflows/ci.yml` least-privilege (`contents: read`) CI matrix running `pip check`, `ruff check .`, `compileall`, `pytest -v`, and `tools/store_readiness.py --json`.
 - `TODO.md` with 10-gate release status table (`final_gate_check.py`), `CHANGELOG.md`, PEP 561 `src/ellmos_tray/py.typed`, `ellmos-module.v2.json`, and expanded security/metadata contract tests.
 
 ### Changed
+- Replaced remaining host-scoped local path literals in `src/ellmos_tray/client.py` (`ELLMOS_CREDENTIALS_DIR` / `Path.home()`) and `src/ellmos_tray/runner.py` (`ELLMOS_LOCAL_DEV_DIR` / `Path.home()`) with portable environment-driven lookup and updated `file://` test fixtures so `repo_privacy_gate` passes cleanly.
+- Expanded `.github/workflows/ci.yml` matrix across `ubuntu-latest` (3.11–3.13), `windows-latest` (3.11–3.13), and `macos-latest` (3.12–3.13) with `pip install --no-build-isolation --no-deps --dry-run .` and `ellmos-tray --smoke-promptboard`.
+- Added PEP 621 `keywords`, `Contributing`/`Code of Conduct` URLs, and hardened `[tool.pytest.ini_options]` (`--strict-markers`, `xfail_strict`, `asyncio_default_fixture_loop_scope = "function"`, `norecursedirs`) in `pyproject.toml`, plus synchronized `README.md` and `README_de.md` badges and governance/P-022 links.
 - Synchronized `README_de.md` and `PRIVACY_POLICY.md` with `README.md` (`--smoke-promptboard`, `#510`/`#511` security & claim boundaries, and cloud credential clarity).
-- Hardened `.gitignore` with SSH key wildcards (`id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`), `*.csr`, `*.token`, `*.secret`, token JSON patterns, `.pytest_temp/`, agent caches, `CONFLICT_REVIEW_LOG*`, `LOCK-CACHE*`, and multi-host conflict exclusions.
+- Hardened `.gitignore` with SSH key wildcards (`id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`), `*.csr`, `*.token`, `*.secret`, token JSON patterns, `.pytest_temp/`, `.pytest_tmp*/`, WAL/SHM patterns, `*MARKETING-LOG.txt`, `TO-DECIDE-USER*`, `TASKPLAN_*.md`, agent caches, `CONFLICT_REVIEW_LOG*`, `LOCK-CACHE*`, and multi-host conflict exclusions.
 
 ## [0.1.2]
 

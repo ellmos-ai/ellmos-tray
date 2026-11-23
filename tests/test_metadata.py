@@ -33,18 +33,25 @@ def test_pyproject_version_typing_pep639_and_pytest_safety() -> None:
     assert project["name"] == "ellmos-tray"
     assert project["version"] == ellmos_tray.__version__
     assert "Typing :: Typed" in project["classifiers"]
+    assert project["license"] == "MIT"
+    assert not any(c.startswith("License ::") for c in project["classifiers"])
     assert project["license-files"] == ["LICENSE", "THIRD_PARTY_LICENSES.md"]
-    assert "Security" in project["urls"]
-    assert "Third-Party Licenses" in project["urls"]
+    assert project.get("keywords")
+    for url_key in ("Homepage", "Repository", "Issues", "Changelog", "Contributing", "Code of Conduct", "Security", "Privacy Policy", "Third-Party Licenses"):
+        assert url_key in project["urls"]
 
     package_data = data["tool"]["setuptools"]["package-data"]
     assert "py.typed" in package_data["ellmos_tray"]
     assert (REPO_ROOT / "src" / "ellmos_tray" / "py.typed").is_file()
 
-    # Guard against relative --basetemp data-loss hazard under pytest 9.x
+    # Guard against relative --basetemp data-loss hazard under pytest 9.x (T-20261114-932985855)
     pytest_opts = data.get("tool", {}).get("pytest", {}).get("ini_options", {})
-    addopts = str(pytest_opts.get("addopts", ""))
-    assert "--basetemp" not in addopts
+    addopts = pytest_opts.get("addopts", [])
+    addopts_str = " ".join(addopts) if isinstance(addopts, list) else str(addopts)
+    assert "--basetemp" not in addopts_str
+    assert "--strict-markers" in addopts_str
+    assert pytest_opts.get("xfail_strict") is True
+    assert ".pytest_temp" in pytest_opts.get("norecursedirs", [])
 
 
 def test_v2_module_manifest_consistency() -> None:
@@ -71,12 +78,31 @@ def test_release_hygiene_docs_and_gitignore() -> None:
         "THIRD_PARTY_LICENSES.md",
         "SECURITY.md",
         "PRIVACY_POLICY.md",
+        "CONTRIBUTING.md",
+        "CODE_OF_CONDUCT.md",
+        "SKILL.md",
+        "llms.txt",
+        "llm.txt",
+        "MANIFEST.in",
         "CHANGELOG.md",
         "TODO.md",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/bug_report.md",
+        ".github/ISSUE_TEMPLATE/feature_request.md",
     ):
         path = REPO_ROOT / filename
         assert path.is_file(), f"Missing required root file: {filename}"
         assert path.stat().st_size > 0, f"Empty root file: {filename}"
+
+    contrib_text = (REPO_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    assert "## English" in contrib_text and "## Deutsch" in contrib_text
+    coc_text = (REPO_ROOT / "CODE_OF_CONDUCT.md").read_text(encoding="utf-8")
+    assert "## English" in coc_text and "## Deutsch" in coc_text
+    skill_text = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
+    assert "name: ellmos-tray" in skill_text
+    assert "ellmos-tray --store-preflight" in skill_text
+    llms_text = (REPO_ROOT / "llms.txt").read_text(encoding="utf-8")
+    assert "ellmos-tray" in llms_text and "SKILL.md" in llms_text
 
     todo_text = (REPO_ROOT / "TODO.md").read_text(encoding="utf-8")
     assert "## STATUS" in todo_text
@@ -98,6 +124,11 @@ def test_release_hygiene_docs_and_gitignore() -> None:
         "*.token",
         "*.secret",
         ".pytest_temp/",
+        ".pytest_tmp/",
+        "*MARKETING-LOG.txt",
+        "TO-DECIDE-USER*",
+        "TASKPLAN_*.md",
+        "*.sqlite-wal",
         "CONFLICT_REVIEW_LOG*",
         "LOCK-CACHE*",
     ):
@@ -125,6 +156,56 @@ def test_security_policy_slas_and_sbom_contracts() -> None:
     ci_text = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "contents: read" in ci_text
     assert "pytest" in ci_text and "ruff check" in ci_text
+    for os_name in ("ubuntu-latest", "windows-latest", "macos-latest"):
+        assert os_name in ci_text
+    for py_ver in ('"3.11"', '"3.12"', '"3.13"'):
+        assert py_ver in ci_text
+    assert "pip check" in ci_text
+    assert "--dry-run" in ci_text
+    assert "store_readiness.py" in ci_text
+
+
+def test_portable_env_resolution_without_hardcoded_paths(monkeypatch, tmp_path) -> None:
+    from ellmos_tray.client import _resolve_auth_header
+    from ellmos_tray.runner import LegacyBachIdleRunner
+
+    cred_file = tmp_path / "creds" / "bach" / "control_api_token.txt"
+    cred_file.parent.mkdir(parents=True)
+    cred_file.write_text("# comment\nportable-secret-fixture\n", encoding="utf-8")
+    monkeypatch.delenv("CONTROL_API_AUTH_HEADER", raising=False)
+    monkeypatch.delenv("BACH_CONTROL_API_TOKEN", raising=False)
+    monkeypatch.delenv("BACH_CONTROL_API_TOKEN_FILE", raising=False)
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "empty_home"))
+    monkeypatch.setenv("ELLMOS_CREDENTIALS_DIR", str(tmp_path / "creds"))
+    assert _resolve_auth_header() == "Bearer portable-secret-fixture"
+
+    fake_bach = tmp_path / "localdev" / "repos" / "bach"
+    fake_bach.mkdir(parents=True)
+    monkeypatch.delenv("BACH_REPO_DIR", raising=False)
+    monkeypatch.setenv("ELLMOS_LOCAL_DEV_DIR", str(tmp_path / "localdev"))
+    runner = LegacyBachIdleRunner(enabled=False)
+    assert runner.repo_dir == fake_bach
+
+
+def test_version_consistency_across_manifests() -> None:
+    pyproject_data = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    v1_manifest = json.loads((REPO_ROOT / "ellmos-module.json").read_text(encoding="utf-8"))
+    v2_manifest = json.loads((REPO_ROOT / "ellmos-module.v2.json").read_text(encoding="utf-8"))
+    store_pkg = json.loads((REPO_ROOT / "store_package.json").read_text(encoding="utf-8"))
+    ver = pyproject_data["project"]["version"]
+    assert ver == ellmos_tray.__version__ == v1_manifest["version"] == v2_manifest["version"]
+    assert store_pkg["version"].startswith(f"{ver}.")
+
+
+def test_readme_bilingual_parity_and_governance_links() -> None:
+    en_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    de_text = (REPO_ROOT / "README_de.md").read_text(encoding="utf-8")
+    for text in (en_text, de_text):
+        assert "assets/banner.svg" in text
+        for target in ("CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SKILL.md", "llms.txt"):
+            assert target in text, f"Missing link to {target}"
+    assert "README_de.md" in en_text
+    assert "README.md" in de_text
 
 
 def test_zero_hardcoded_personal_paths_and_secrets() -> None:

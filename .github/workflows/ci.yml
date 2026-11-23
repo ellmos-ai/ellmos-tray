@@ -29,7 +29,15 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.13"
           - os: windows-latest
+            python-version: "3.11"
+          - os: windows-latest
             python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.13"
+          - os: macos-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.13"
 
     steps:
       - name: Checkout repository
@@ -45,8 +53,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Verify dependency consistency
-        run: python -m pip check
+      - name: Verify dependency consistency and dry-run packaging
+        run: |
+          python -m pip check
+          python -m pip install --no-build-isolation --no-deps --dry-run .
 
       - name: Lint with Ruff
         run: python -m ruff check .
@@ -55,7 +65,9 @@ jobs:
         run: python -m compileall -q src tests tools
 
       - name: Run pytest suite
-        run: python -m pytest -v
+        run: python -m pytest -ra -v
 
-      - name: Run Windows Store preflight check
-        run: python tools/store_readiness.py --json
+      - name: Run CLI smoke & Windows Store preflight check
+        run: |
+          ellmos-tray --smoke-promptboard
+          python tools/store_readiness.py --json

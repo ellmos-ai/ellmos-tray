@@ -148,7 +148,7 @@ def test_get_history_url_encodes_chat_id():
 @pytest.mark.parametrize(
     "unsafe_url",
     [
-        "file:///C:/Windows/System32/calc.exe",
+        "file://localhost/System32/calc.exe",
         "javascript:alert(1)",
         "\\\\attacker.example\\share\\payload.exe",
         "https://t.me/bach_assistant_bot\r\nX-Evil: 1",

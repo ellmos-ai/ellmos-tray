@@ -1,0 +1,38 @@
+# ellmos-tray — LLM & Agent Overview
+
+> Pluggable, modular system tray and quick control client for ELLMOS, BACH, and Open Ocean desktop environments (Python >= 3.11, MIT License).
+
+## Summary
+
+`ellmos-tray` (`0.1.2`) decouples desktop tray UI observation (`pystray`, `Pillow`) from background agent/worker execution. By default it communicates over local loopback (`127.0.0.1`) with Control API (`8081`), GUI Dashboard (`8000`), and Ollama (`11434`), enforces single-instance OS locks (`msvcrt` / `fcntl.flock`), caches rendered tray icons (`IconCache`, `ThumbnailCache`), and provides a Windows Store / MSIX preflight validator (`tools/store_readiness.py`).
+
+## Entry Points
+
+- **CLI:** `ellmos-tray` (`python -m ellmos_tray`)
+  - `--brand {ellmos,bach,ocean}`
+  - `--host 127.0.0.1 --port 8081 --gui-url <url>`
+  - `--smoke-promptboard` (JSON snapshot of PromptBoard prompt candidates)
+  - `--check-device` (loopback, port, and storage acceptance JSON report)
+  - `--store-preflight` (MSIX manifest, PNG assets, and policy preflight JSON report)
+  - `--idle-worker {auto,on,off,legacy}` (`auto` uses passive observer `PassiveTaskDelegate`)
+- **Python API (`ellmos_tray`):** `TrayApp`, `TrayBranding`, `ControlApiClient`, `BackendProcessManager`, `PromptManager`, `PassiveTaskDelegate`, `LegacyBachIdleRunner`, `check_device_acceptance`, `acquire_single_instance_lock`, `release_single_instance_lock`.
+- **Product Skill:** [SKILL.md](SKILL.md)
+
+## Security & Claim Boundaries
+
+- **Authenticated Control API (`#510`):** Bearer token attached strictly to `base_url`; `CR`/`LF`/`NUL` header rejection (`CWE-113`); `4 MiB` response cap (`CWE-400`); HTTP redirects blocked via `_NoControlRedirect` with same-origin enforcement; `http`/`https`-only browser launch guard (`is_safe_http_url`).
+- **Store Preflight (`#511`):** `tools/store_readiness.py` reports `claim_boundary: "source_and_metadata_preflight_only"` and leaves MSIX package build, Authenticode signing, WACK binary run, and Partner Center submission as explicit external gates.
+- **License / SBOM:** Project license `MIT`; `pystray` (`LGPL-3.0-or-later`) imported dynamically at runtime (see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
+
+## Key Files
+
+- Package config: `pyproject.toml`, `MANIFEST.in`, `ellmos-module.v2.json`
+- Source package: `src/ellmos_tray/` (`__init__.py`, `__main__.py`, `app.py`, `branding.py`, `cache.py`, `client.py`, `device.py`, `icon.py`, `lock.py`, `menu.py`, `navigation.py`, `process.py`, `prompts.py`, `runner.py`, `py.typed`)
+- Store tooling: `tools/store_readiness.py`, `store_package.json`, `STORE_LISTING.md`, `store_assets/`
+- Governance & docs: `README.md`, `README_de.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `PRIVACY_POLICY.md`, `THIRD_PARTY_LICENSES.md`, `CHANGELOG.md`, `SKILL.md`
+- Tests: `tests/` (`pytest -ra -v`, `ruff check .`)
+
+## Last Checked
+
+- **Date:** `2026-11-23`
+- **Version:** `0.1.2`

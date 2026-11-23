@@ -1,0 +1,1 @@
+See ./llms.txt for the LLM and agent overview of ellmos-tray, and ./SKILL.md for the product skill.

@@ -1,6 +1,6 @@
 # Pre-Release & Maintenance TODO: ellmos-tray
 
-**Last Checked:** 2026-11-15
+**Last Checked:** 2026-11-23
 **Target Repo:** `ellmos-ai/ellmos-tray`
 **Current Package Version:** `0.1.2`
 
@@ -35,7 +35,7 @@
 ## MEDIUM PRIORITY
 
 - [ ] MSIX packaging, Authenticode certificate signing, and WACK binary verification (external release gates documented in `tools/store_readiness.py` & LGPLv3 §4 notice in `THIRD_PARTY_LICENSES.md`)
-- [ ] Add `CONTRIBUTING.md`
+- [x] Add `CONTRIBUTING.md` (`CODE_OF_CONDUCT.md`, `SKILL.md`, `llms.txt`, `llm.txt`, `MANIFEST.in`, `.github/ISSUE_TEMPLATE/*`)
 - [ ] Optional PyPI release automation
 
 ---

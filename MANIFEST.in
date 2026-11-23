@@ -1,0 +1,23 @@
+include LICENSE
+include THIRD_PARTY_LICENSES.md
+include PRIVACY_POLICY.md
+include SECURITY.md
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
+include CHANGELOG.md
+include README.md
+include README_de.md
+include SKILL.md
+include llms.txt
+include llm.txt
+include STORE_LISTING.md
+include TODO.md
+include ellmos-module.json
+include ellmos-module.v2.json
+include store_package.json
+include pyproject.toml
+recursive-include src *.py py.typed
+recursive-include tools *.py
+recursive-include assets *.svg *.png *.ico
+recursive-include store_assets *.png
+recursive-include tests *.py

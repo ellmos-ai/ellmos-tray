@@ -10,6 +10,15 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "THIRD_PARTY_LICENSES.md"]
 requires-python = ">=3.11"
+keywords = [
+    "system-tray",
+    "desktop-client",
+    "pystray",
+    "ellmos",
+    "bach",
+    "open-ocean",
+    "local-ai",
+]
 authors = [
     { name = "Lukas Geiger" }
 ]
@@ -45,6 +54,8 @@ Homepage = "https://github.com/ellmos-ai/ellmos-tray"
 Repository = "https://github.com/ellmos-ai/ellmos-tray.git"
 Issues = "https://github.com/ellmos-ai/ellmos-tray/issues"
 Changelog = "https://github.com/ellmos-ai/ellmos-tray/blob/master/CHANGELOG.md"
+Contributing = "https://github.com/ellmos-ai/ellmos-tray/blob/master/CONTRIBUTING.md"
+"Code of Conduct" = "https://github.com/ellmos-ai/ellmos-tray/blob/master/CODE_OF_CONDUCT.md"
 Security = "https://github.com/ellmos-ai/ellmos-tray/blob/master/SECURITY.md"
 "Privacy Policy" = "https://github.com/ellmos-ai/ellmos-tray/blob/master/PRIVACY_POLICY.md"
 "Third-Party Licenses" = "https://github.com/ellmos-ai/ellmos-tray/blob/master/THIRD_PARTY_LICENSES.md"
@@ -61,6 +72,17 @@ ellmos_tray = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = ["--strict-markers"]
+xfail_strict = true
+norecursedirs = [
+    ".pytest_temp",
+    ".pytest_tmp",
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    "store_assets",
+]
 
 [tool.ruff]
 target-version = "py311"
